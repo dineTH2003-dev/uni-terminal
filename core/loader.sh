@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-if [ -n "${UNISHELL_LOADER_LOADED:-}" ]; then
-  return 0 2>/dev/null || exit 0
-fi
 UNISHELL_LOADER_LOADED=1
 
 if [ -z "${UNISHELL_HOME:-}" ]; then

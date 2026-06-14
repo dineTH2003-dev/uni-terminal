@@ -21,7 +21,6 @@ proj     # cd ~/workspace/projects
 devops   # cd ~/workspace/devops
 learn    # cd ~/workspace/learning
 scripts  # cd ~/workspace/scripts
-uniexit  # unishell off
 ```
 
 ## Assignment Generator

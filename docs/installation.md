@@ -34,6 +34,22 @@ source ~/.zshrc
 unishell doctor
 ```
 
+## Update Existing Install
+
+Pulling the Git repository only updates the clone directory. Zsh and Bash load UniShell from `~/.unishell`, so run the installer again after pulling changes:
+
+```bash
+git pull
+./install.sh
+source ~/.zshrc
+```
+
+For Bash:
+
+```bash
+source ~/.bashrc
+```
+
 ## Temporary Disable
 
 UniShell is sourced into your current Bash or Zsh shell. To return the current terminal tab to a normal shell session:

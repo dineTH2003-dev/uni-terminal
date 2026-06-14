@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-if [ -n "${UNISHELL_CONFIG_LOADED:-}" ]; then
-  return 0 2>/dev/null || exit 0
-fi
 UNISHELL_CONFIG_LOADED=1
 
 : "${UNISHELL_HOME:=$HOME/.unishell}"
@@ -63,7 +60,8 @@ unishell_session_off() {
     unishell_shell_config unishell_valid_name mkassign mkproject \
     gstatus gsave gpush glog gnew gundo sysinfo ports myip diskcheck \
     memcheck service-check docker-clean _unishell_require_git_repo \
-    _unishell_tool_status ok warn info err unishell_session_off unishell; do
+    _unishell_tool_status ok warn info err unishell_session_off unishell \
+    uniexit; do
     unset -f "$fn" 2>/dev/null || true
     unfunction "$fn" 2>/dev/null || true
   done
@@ -86,6 +84,10 @@ unishell() {
   esac
 }
 
+uniexit() {
+  unishell off "$@"
+}
+
 unishell_help() {
   cat <<'EOF'
 UniShell v1.0.0
@@ -98,7 +100,7 @@ Usage:
   unishell version          Print version
 
 Session:
-  uniexit                   Alias for unishell off
+  uniexit                   Disable UniShell in this shell session
 
 Workspace:
   ws                        cd ~/workspace

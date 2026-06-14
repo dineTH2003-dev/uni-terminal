@@ -18,6 +18,8 @@ export PATH="$HOME/.unishell/bin:$PATH"
 
 # shellcheck source=/dev/null
 . "$HOME/.unishell/core/loader.sh"
+# shellcheck source=/dev/null
+. "$HOME/.unishell/core/loader.sh"
 
 unishell doctor >/dev/null
 unishell init >/dev/null

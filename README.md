@@ -29,6 +29,18 @@ If you use Zsh, reload `~/.zshrc` instead:
 source ~/.zshrc
 ```
 
+## Update
+
+If you already installed UniShell and then pull new changes from GitHub, run the installer again so the updated files are copied into `~/.unishell`:
+
+```bash
+git pull
+./install.sh
+source ~/.zshrc
+```
+
+For Bash, use `source ~/.bashrc`.
+
 ## Quick Start
 
 ```bash
@@ -79,7 +91,6 @@ diskcheck
 | `devops` | `~/workspace/devops` |
 | `learn` | `~/workspace/learning` |
 | `scripts` | `~/workspace/scripts` |
-| `uniexit` | `unishell off` |
 
 ## Temporarily Disable UniShell
 
