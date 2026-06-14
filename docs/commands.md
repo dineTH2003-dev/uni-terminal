@@ -5,9 +5,12 @@
 ```bash
 unishell init
 unishell doctor
+unishell off
 unishell help
 unishell version
 ```
+
+`unishell off` disables UniShell only in the current shell session. It removes UniShell aliases, functions, and `~/.unishell/bin` from `PATH`. Load it again with `source ~/.zshrc` or `source ~/.bashrc`.
 
 ## Workspace Aliases
 
@@ -18,6 +21,7 @@ proj     # cd ~/workspace/projects
 devops   # cd ~/workspace/devops
 learn    # cd ~/workspace/learning
 scripts  # cd ~/workspace/scripts
+uniexit  # unishell off
 ```
 
 ## Assignment Generator

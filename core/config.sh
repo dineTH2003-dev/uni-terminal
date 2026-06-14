@@ -42,6 +42,50 @@ unishell_valid_name() {
   [ -n "$name" ] && [[ "$name" != *[^A-Za-z0-9._-]* ]]
 }
 
+unishell_session_off() {
+  local unishell_bin="$UNISHELL_HOME/bin"
+  local shell_config
+  local path_value
+
+  shell_config="$(unishell_shell_config)"
+  path_value=":${PATH:-}:"
+  path_value="${path_value//:$unishell_bin:/:}"
+  path_value="${path_value#:}"
+  path_value="${path_value%:}"
+  PATH="$path_value"
+  export PATH
+
+  unalias ws uni proj devops learn scripts uniexit 2>/dev/null || true
+
+  local fn
+  for fn in \
+    unishell_init unishell_doctor unishell_help unishell_shell_name \
+    unishell_shell_config unishell_valid_name mkassign mkproject \
+    gstatus gsave gpush glog gnew gundo sysinfo ports myip diskcheck \
+    memcheck service-check docker-clean _unishell_require_git_repo \
+    _unishell_tool_status ok warn info err unishell_session_off unishell; do
+    unset -f "$fn" 2>/dev/null || true
+    unfunction "$fn" 2>/dev/null || true
+  done
+
+  unset UNISHELL_HOME UNISHELL_VERSION UNISHELL_CONFIG_LOADED UNISHELL_LOADER_LOADED
+  printf "UniShell disabled for this shell session. Run 'source %s' to load it again.\n" "$shell_config"
+}
+
+unishell() {
+  local command_name="${1:-help}"
+
+  case "$command_name" in
+    off|exit|disable)
+      shift || true
+      unishell_session_off "$@"
+      ;;
+    *)
+      "$UNISHELL_HOME/bin/unishell" "$@"
+      ;;
+  esac
+}
+
 unishell_help() {
   cat <<'EOF'
 UniShell v1.0.0
@@ -49,8 +93,12 @@ UniShell v1.0.0
 Usage:
   unishell init             Create ~/workspace folders
   unishell doctor           Check UniShell and common tools
+  unishell off              Disable UniShell in this shell session
   unishell help             Show this help
   unishell version          Print version
+
+Session:
+  uniexit                   Alias for unishell off
 
 Workspace:
   ws                        cd ~/workspace

@@ -11,6 +11,7 @@ UniShell is a pure Bash shell toolkit for students, developers, and DevOps begin
 - Beginner-friendly Git helpers
 - System helper commands for ports, disk, memory, IPs, services, and Docker cleanup
 - `unishell doctor` environment report
+- `unishell off` for temporarily returning to a normal shell session
 - Clean uninstaller that leaves `~/workspace` untouched
 
 ## Install
@@ -47,6 +48,7 @@ diskcheck
 | --- | --- |
 | `unishell init` | Create the standard `~/workspace` structure |
 | `unishell doctor` | Check shell, dependencies, install path, and workspace |
+| `unishell off` | Disable UniShell in the current shell session |
 | `unishell help` | Show command help |
 | `unishell version` | Print the current version |
 | `mkassign NAME` | Create a university assignment folder |
@@ -77,6 +79,27 @@ diskcheck
 | `devops` | `~/workspace/devops` |
 | `learn` | `~/workspace/learning` |
 | `scripts` | `~/workspace/scripts` |
+| `uniexit` | `unishell off` |
+
+## Temporarily Disable UniShell
+
+UniShell runs inside your existing Bash or Zsh session. To stop using UniShell commands and aliases in the current terminal tab:
+
+```bash
+unishell off
+```
+
+or:
+
+```bash
+uniexit
+```
+
+This does not uninstall UniShell. To load it again in the same Zsh tab:
+
+```bash
+source ~/.zshrc
+```
 
 ## Uninstall
 

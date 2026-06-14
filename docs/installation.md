@@ -34,6 +34,26 @@ source ~/.zshrc
 unishell doctor
 ```
 
+## Temporary Disable
+
+UniShell is sourced into your current Bash or Zsh shell. To return the current terminal tab to a normal shell session:
+
+```bash
+unishell off
+```
+
+This removes UniShell commands, aliases, and PATH changes only from the current session. To load UniShell again:
+
+```bash
+source ~/.zshrc
+```
+
+For Bash:
+
+```bash
+source ~/.bashrc
+```
+
 ## What the Installer Does
 
 1. Detects Bash or Zsh from `$SHELL`.
