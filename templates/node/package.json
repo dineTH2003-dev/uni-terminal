@@ -1,0 +1,9 @@
+{
+  "name": "{{PROJECT_NAME}}",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo \"Add a dev script\"",
+    "test": "echo \"Add tests\""
+  }
+}

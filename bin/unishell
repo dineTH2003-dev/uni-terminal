@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+export UNISHELL_HOME="$(cd "$BIN_DIR/.." && pwd -P)"
+
+# shellcheck source=/dev/null
+. "$UNISHELL_HOME/core/loader.sh"
+
+command_name="${1:-help}"
+shift || true
+
+case "$command_name" in
+  init)
+    unishell_init "$@"
+    ;;
+  doctor)
+    unishell_doctor "$@"
+    ;;
+  help|-h|--help)
+    unishell_help
+    ;;
+  version|-v|--version)
+    printf "UniShell v%s\n" "$UNISHELL_VERSION"
+    ;;
+  *)
+    err "Unknown command: $command_name. Run 'unishell help'"
+    exit 1
+    ;;
+esac
