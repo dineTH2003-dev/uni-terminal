@@ -30,6 +30,10 @@ command -v cdf >/dev/null
 command -v editfile >/dev/null
 command -v jump >/dev/null
 
+if command -v zsh >/dev/null 2>&1; then
+  HOME="$HOME" zsh -f -c 'alias glog="git log --oneline"; source "$HOME/.unishell/core/loader.sh"; whence -w glog | grep -q function'
+fi
+
 mkassign dbms-lab-01 >/dev/null
 [ -d "$HOME/workspace/university/dbms-lab-01/questions" ]
 [ -d "$HOME/workspace/university/dbms-lab-01/answers" ]

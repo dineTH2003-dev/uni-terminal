@@ -82,7 +82,9 @@ _unishell_install_packages() {
 
   case "$manager" in
     apt)
-      _unishell_root_cmd apt-get update || return 1
+      if ! _unishell_root_cmd apt-get update; then
+        warn "apt-get update failed; trying install with existing package lists"
+      fi
       _unishell_root_cmd apt-get install -y "$@"
       ;;
     dnf)
