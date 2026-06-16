@@ -9,6 +9,9 @@
 - Git helper commands
 - System helper commands
 - Doctor command
+- Optional `fzf` project/file navigation
+- Optional `zoxide` smart jumping
+- Optional tool installer through `unishell tools install`
 - Clean uninstaller
 
 ## v2 Ideas
@@ -16,8 +19,6 @@
 These are intentionally outside the v1 scope.
 
 - Starship prompt auto-configuration
-- `fzf` project opener
-- `zoxide` integration
 - `unishell update`
 - Plugin enable and disable system
 - Docker and Kubernetes project templates

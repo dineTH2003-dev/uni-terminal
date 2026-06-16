@@ -11,6 +11,7 @@ UniShell is a pure Bash shell toolkit for students, developers, and DevOps begin
 - Beginner-friendly Git helpers
 - System helper commands for ports, disk, memory, IPs, services, and Docker cleanup
 - `unishell doctor` environment report
+- Optional `fzf` and `zoxide` integration for fuzzy navigation and smart folder jumping
 - `unishell off` for temporarily returning to a normal shell session
 - Clean uninstaller that leaves `~/workspace` untouched
 
@@ -21,6 +22,18 @@ git clone https://github.com/dineTH2003-dev/uni-terminal.git
 cd uni-terminal
 ./install.sh
 source ~/.bashrc
+```
+
+To install optional `fzf` and `zoxide` tools during setup, use:
+
+```bash
+./install.sh --with-tools
+```
+
+You can also install them later through UniShell:
+
+```bash
+unishell tools install
 ```
 
 If you use Zsh, reload `~/.zshrc` instead:
@@ -45,10 +58,13 @@ For Bash, use `source ~/.bashrc`.
 
 ```bash
 unishell doctor
+unishell tools status
 unishell init
 ws
 mkassign dbms-lab-01
 mkproject demo-api --python
+openproj
+editfile
 gstatus
 ports
 diskcheck
@@ -60,6 +76,8 @@ diskcheck
 | --- | --- |
 | `unishell init` | Create the standard `~/workspace` structure |
 | `unishell doctor` | Check shell, dependencies, install path, and workspace |
+| `unishell tools status` | Check optional `fzf` and `zoxide` tools |
+| `unishell tools install` | Install missing optional `fzf` and `zoxide` tools |
 | `unishell off` | Disable UniShell in the current shell session |
 | `unishell help` | Show command help |
 | `unishell version` | Print the current version |
@@ -67,6 +85,11 @@ diskcheck
 | `mkproject NAME --basic` | Create a basic project |
 | `mkproject NAME --python` | Create a Python project |
 | `mkproject NAME --node` | Create a Node.js project |
+| `openproj [DIR]` | Fuzzy select and cd into a workspace/project folder |
+| `cdf` | Fuzzy cd into a folder below the current directory |
+| `editfile` | Fuzzy select and open a file in `$EDITOR` |
+| `j NAME` / `ji` | Smart zoxide jump commands when zoxide is installed |
+| `jump NAME` | UniShell wrapper around the zoxide jump command |
 | `gstatus` | Show concise Git status |
 | `gsave "message"` | Add all changes and commit |
 | `gpush` | Show remote URL, then push |
@@ -91,6 +114,22 @@ diskcheck
 | `devops` | `~/workspace/devops` |
 | `learn` | `~/workspace/learning` |
 | `scripts` | `~/workspace/scripts` |
+
+## Optional Tools
+
+`fzf` and `zoxide` are optional engines. UniShell detects them at startup, loads their Bash/Zsh integrations when available, and keeps working when they are missing.
+
+```bash
+unishell tools status
+unishell tools install
+```
+
+Set these before loading UniShell if you want to disable an integration:
+
+```bash
+export UNISHELL_ENABLE_FZF=0
+export UNISHELL_ENABLE_ZOXIDE=0
+```
 
 ## Temporarily Disable UniShell
 

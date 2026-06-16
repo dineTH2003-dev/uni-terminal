@@ -33,6 +33,23 @@ unishell_doctor() {
   _unishell_tool_status "Python3" "python3" "--version"
   _unishell_tool_status "Docker" "docker" "--version"
   _unishell_tool_status "Node.js" "node" "--version"
+  _unishell_tool_status "fzf" "fzf" "--version"
+  if [ "${UNISHELL_FZF_ENABLED:-0}" = "1" ]; then
+    ok "$(printf '%-17s %s' "fzf integration:" "enabled")"
+  elif [ "${UNISHELL_FZF_AVAILABLE:-0}" = "1" ]; then
+    warn "$(printf '%-17s %s' "fzf integration:" "available; reload an interactive shell")"
+  else
+    warn "$(printf '%-17s %s' "fzf integration:" "disabled")"
+  fi
+
+  _unishell_tool_status "zoxide" "zoxide" "--version"
+  if [ "${UNISHELL_ZOXIDE_ENABLED:-0}" = "1" ]; then
+    ok "$(printf '%-17s %s' "zoxide integration:" "enabled as ${UNISHELL_ZOXIDE_CMD:-j}")"
+  elif [ "${UNISHELL_ZOXIDE_AVAILABLE:-0}" = "1" ]; then
+    warn "$(printf '%-17s %s' "zoxide integration:" "available; reload an interactive shell")"
+  else
+    warn "$(printf '%-17s %s' "zoxide integration:" "disabled")"
+  fi
 
   if [ -d "$UNISHELL_HOME" ]; then
     ok "$(printf '%-17s %s' "UniShell:" "$UNISHELL_HOME")"

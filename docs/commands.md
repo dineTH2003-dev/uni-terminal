@@ -5,10 +5,14 @@
 ```bash
 unishell init
 unishell doctor
+unishell tools status
+unishell tools install
 unishell off
 unishell help
 unishell version
 ```
+
+`unishell tools status` checks the optional `fzf` and `zoxide` engines. `unishell tools install` installs missing optional tools through a supported package manager when possible.
 
 `unishell off` disables UniShell only in the current shell session. It removes UniShell aliases, functions, and `~/.unishell/bin` from `PATH`. Load it again with `source ~/.zshrc` or `source ~/.bashrc`.
 
@@ -21,6 +25,24 @@ proj     # cd ~/workspace/projects
 devops   # cd ~/workspace/devops
 learn    # cd ~/workspace/learning
 scripts  # cd ~/workspace/scripts
+```
+
+## Fuzzy Navigation
+
+```bash
+openproj          # choose a workspace/project folder with fzf
+openproj ~/code   # choose a folder under a custom base directory
+cdf               # choose a directory below the current directory
+editfile          # choose a file and open it in $EDITOR
+j api             # smart zoxide jump when zoxide is installed
+ji                # interactive zoxide jump
+jump api          # UniShell wrapper around j
+```
+
+`openproj`, `cdf`, and `editfile` require `fzf`. `j`, `ji`, and `jump` require `zoxide`. Install both with:
+
+```bash
+unishell tools install
 ```
 
 ## Assignment Generator

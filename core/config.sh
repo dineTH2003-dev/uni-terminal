@@ -4,6 +4,9 @@ UNISHELL_CONFIG_LOADED=1
 
 : "${UNISHELL_HOME:=$HOME/.unishell}"
 : "${WORKSPACE_DIR:=$HOME/workspace}"
+: "${UNISHELL_ENABLE_FZF:=1}"
+: "${UNISHELL_ENABLE_ZOXIDE:=1}"
+: "${UNISHELL_ZOXIDE_CMD:=j}"
 UNISHELL_VERSION="1.0.0"
 
 RED='\033[0;31m'
@@ -58,6 +61,12 @@ unishell_session_off() {
   for fn in \
     unishell_init unishell_doctor unishell_help unishell_shell_name \
     unishell_shell_config unishell_valid_name mkassign mkproject \
+    openproj cdf editfile jump _unishell_require_fzf _unishell_find_dirs \
+    _unishell_find_files unishell_tools unishell_tools_help \
+    unishell_install_tools _unishell_optional_tools \
+    _unishell_optional_tools_status _unishell_tool_version \
+    _unishell_package_manager _unishell_root_cmd \
+    _unishell_print_optional_tool_instructions _unishell_install_packages \
     gstatus gsave gpush glog gnew gundo sysinfo ports myip diskcheck \
     memcheck service-check docker-clean _unishell_require_git_repo \
     _unishell_tool_status ok warn info err unishell_session_off unishell \
@@ -66,7 +75,16 @@ unishell_session_off() {
     unfunction "$fn" 2>/dev/null || true
   done
 
-  unset UNISHELL_HOME UNISHELL_VERSION UNISHELL_CONFIG_LOADED UNISHELL_LOADER_LOADED
+  if [ "${UNISHELL_ZOXIDE_ENABLED:-0}" = "1" ]; then
+    local zoxide_cmd="${UNISHELL_ZOXIDE_CMD:-j}"
+    unset -f "$zoxide_cmd" "${zoxide_cmd}i" __zoxide_z __zoxide_zi __zoxide_hook __zoxide_pwd 2>/dev/null || true
+    unfunction "$zoxide_cmd" "${zoxide_cmd}i" __zoxide_z __zoxide_zi __zoxide_hook __zoxide_pwd 2>/dev/null || true
+  fi
+
+  unset UNISHELL_HOME UNISHELL_VERSION UNISHELL_CONFIG_LOADED UNISHELL_LOADER_LOADED \
+    UNISHELL_ENABLE_FZF UNISHELL_ENABLE_ZOXIDE UNISHELL_ZOXIDE_CMD \
+    UNISHELL_FZF_AVAILABLE UNISHELL_FZF_ENABLED \
+    UNISHELL_ZOXIDE_AVAILABLE UNISHELL_ZOXIDE_ENABLED
   printf "UniShell disabled for this shell session. Run 'source %s' to load it again.\n" "$shell_config"
 }
 
@@ -95,6 +113,8 @@ UniShell v1.0.0
 Usage:
   unishell init             Create ~/workspace folders
   unishell doctor           Check UniShell and common tools
+  unishell tools status     Check optional fzf and zoxide tools
+  unishell tools install    Install missing optional fzf/zoxide tools
   unishell off              Disable UniShell in this shell session
   unishell help             Show this help
   unishell version          Print version
@@ -109,6 +129,14 @@ Workspace:
   devops                    cd ~/workspace/devops
   learn                     cd ~/workspace/learning
   scripts                   cd ~/workspace/scripts
+
+Navigation:
+  openproj [DIR]             Fuzzy open a project/workspace folder
+  cdf                        Fuzzy cd into a folder below current directory
+  editfile                   Fuzzy select a file and open it in $EDITOR
+  j NAME                     Smart jump with zoxide when installed
+  ji                         Interactive zoxide jump when installed
+  jump NAME                  UniShell wrapper around the zoxide jump command
 
 Generators:
   mkassign NAME             Create a university assignment folder

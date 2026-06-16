@@ -22,7 +22,13 @@ export PATH="$HOME/.unishell/bin:$PATH"
 . "$HOME/.unishell/core/loader.sh"
 
 unishell doctor >/dev/null
+unishell tools status >/dev/null
 unishell init >/dev/null
+
+command -v openproj >/dev/null
+command -v cdf >/dev/null
+command -v editfile >/dev/null
+command -v jump >/dev/null
 
 mkassign dbms-lab-01 >/dev/null
 [ -d "$HOME/workspace/university/dbms-lab-01/questions" ]
@@ -52,6 +58,11 @@ fi
 
 if command -v mkproject >/dev/null 2>&1; then
   printf "mkproject still exists after unishell off\n" >&2
+  exit 1
+fi
+
+if command -v openproj >/dev/null 2>&1; then
+  printf "openproj still exists after unishell off\n" >&2
   exit 1
 fi
 

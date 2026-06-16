@@ -6,7 +6,7 @@
 - Bash or Zsh
 - Git for cloning the repository
 
-UniShell itself is pure Bash and does not require a package manager dependency.
+UniShell itself is pure Bash and does not require a package manager dependency. Optional fuzzy navigation uses `fzf` and optional smart jumping uses `zoxide`.
 
 ## Install
 
@@ -14,6 +14,18 @@ UniShell itself is pure Bash and does not require a package manager dependency.
 git clone https://github.com/dineTH2003-dev/uni-terminal.git
 cd uni-terminal
 ./install.sh
+```
+
+To install optional `fzf` and `zoxide` tools during setup:
+
+```bash
+./install.sh --with-tools
+```
+
+To skip the optional tool prompt:
+
+```bash
+./install.sh --no-optional-tools
 ```
 
 Reload your shell:
@@ -32,6 +44,7 @@ source ~/.zshrc
 
 ```bash
 unishell doctor
+unishell tools status
 ```
 
 ## Update Existing Install
@@ -76,8 +89,25 @@ source ~/.bashrc
 2. Backs up the shell config to `~/.bashrc.unishell.backup` or `~/.zshrc.unishell.backup`.
 3. Copies the repository to `~/.unishell`.
 4. Adds `~/.unishell/bin` to `PATH`.
-5. Sources `~/.unishell/core/loader.sh`.
-6. Creates the default `~/workspace` folders.
+5. Offers to install optional `fzf` and `zoxide` tools when missing.
+6. Sources `~/.unishell/core/loader.sh`.
+7. Creates the default `~/workspace` folders.
+
+## Optional Tools
+
+Install optional tools later with:
+
+```bash
+unishell tools install
+```
+
+Check them with:
+
+```bash
+unishell tools status
+```
+
+UniShell loads `fzf` shell integration and `zoxide init` automatically when those tools are installed and the shell is interactive. If they are missing, UniShell shows warnings in `doctor` but the rest of the toolkit keeps working.
 
 ## Reinstall
 

@@ -17,6 +17,9 @@ case "$command_name" in
   doctor)
     unishell_doctor "$@"
     ;;
+  tools)
+    unishell_tools "$@"
+    ;;
   off|exit|disable)
     warn "'unishell off' must run from a shell session where UniShell is sourced."
     info "Reload your shell config, then run: unishell off"
