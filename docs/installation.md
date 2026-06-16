@@ -16,13 +16,7 @@ cd uni-terminal
 ./install.sh
 ```
 
-To install optional `fzf` and `zoxide` tools during setup:
-
-```bash
-./install.sh --with-tools
-```
-
-To skip the optional tool prompt:
+The installer tries to install the optional `fzf` and `zoxide` tools automatically. To skip optional tool installation:
 
 ```bash
 ./install.sh --no-optional-tools
@@ -89,13 +83,13 @@ source ~/.bashrc
 2. Backs up the shell config to `~/.bashrc.unishell.backup` or `~/.zshrc.unishell.backup`.
 3. Copies the repository to `~/.unishell`.
 4. Adds `~/.unishell/bin` to `PATH`.
-5. Offers to install optional `fzf` and `zoxide` tools when missing.
+5. Automatically tries to install optional `fzf` and `zoxide` tools when missing.
 6. Sources `~/.unishell/core/loader.sh`.
 7. Creates the default `~/workspace` folders.
 
 ## Optional Tools
 
-Install optional tools later with:
+Rerun optional tool setup later with:
 
 ```bash
 unishell tools install

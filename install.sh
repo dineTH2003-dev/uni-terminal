@@ -15,16 +15,16 @@ warn() { printf "%b\n" "${YELLOW}[WARN]${NC} $1"; }
 info() { printf "%b\n" "${BLUE}[INFO]${NC} $1"; }
 err() { printf "%b\n" "${RED}[ERR]${NC}  $1" >&2; }
 
-INSTALL_OPTIONAL_TOOLS="prompt"
+INSTALL_OPTIONAL_TOOLS="yes"
 
 usage() {
   cat <<'EOF'
 Usage: ./install.sh [options]
 
 Options:
-  --with-tools              Install missing optional tools: fzf and zoxide
+  --with-tools              Install missing optional tools: fzf and zoxide (default)
   --install-optional-tools  Same as --with-tools
-  --no-optional-tools       Do not prompt for optional tool installation
+  --no-optional-tools       Skip optional tool installation
   -h, --help                Show this help
 EOF
 }

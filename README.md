@@ -24,13 +24,13 @@ cd uni-terminal
 source ~/.bashrc
 ```
 
-To install optional `fzf` and `zoxide` tools during setup, use:
+By default, the installer also tries to install the optional `fzf` and `zoxide` tools automatically. To skip that step, use:
 
 ```bash
-./install.sh --with-tools
+./install.sh --no-optional-tools
 ```
 
-You can also install them later through UniShell:
+You can rerun optional tool setup later through UniShell:
 
 ```bash
 unishell tools install

@@ -13,7 +13,7 @@ export HOME="$TEST_HOME"
 export SHELL="/bin/bash"
 touch "$HOME/.bashrc"
 
-"$ROOT_DIR/install.sh" >/dev/null
+"$ROOT_DIR/install.sh" --no-optional-tools >/dev/null
 export PATH="$HOME/.unishell/bin:$PATH"
 
 # shellcheck source=/dev/null
@@ -78,7 +78,7 @@ export PATH="$UNISHELL_BIN:$PATH"
 # shellcheck source=/dev/null
 . "$HOME/.unishell/core/loader.sh"
 
-"$ROOT_DIR/install.sh" >/dev/null
+"$ROOT_DIR/install.sh" --no-optional-tools >/dev/null
 [ "$(grep -c 'source "$HOME/.unishell/core/loader.sh"' "$HOME/.bashrc")" -eq 1 ]
 
 "$HOME/.unishell/uninstall.sh" >/dev/null
