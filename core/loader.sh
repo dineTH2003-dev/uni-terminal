@@ -30,7 +30,7 @@ _unishell_source_file() {
 _unishell_clear_command_aliases() {
   unalias unishell uniexit mkassign mkproject openproj cdf editfile jump \
     gstatus gsave gpush glog gnew gundo sysinfo ports myip diskcheck \
-    memcheck service-check docker-clean 2>/dev/null || true
+    memcheck service-check docker-clean onboard 2>/dev/null || true
 }
 
 _unishell_source_file "$UNISHELL_HOME/core/config.sh"
@@ -46,6 +46,7 @@ _unishell_source_file "$UNISHELL_HOME/commands/git.sh"
 _unishell_source_file "$UNISHELL_HOME/commands/system.sh"
 _unishell_source_file "$UNISHELL_HOME/commands/tools.sh"
 _unishell_source_file "$UNISHELL_HOME/commands/doctor.sh"
+_unishell_source_file "$UNISHELL_HOME/commands/onboard.sh"
 
 unset -f _unishell_source_file _unishell_clear_command_aliases
 unset _unishell_loader_path

@@ -22,6 +22,20 @@ warn() { printf "%b\n" "${YELLOW}[WARN]${NC} $1"; }
 info() { printf "%b\n" "${BLUE}[INFO]${NC} $1"; }
 err() { printf "%b\n" "${RED}[ERR]${NC}  $1" >&2; }
 
+# Prompt user for input
+unishell_ask() {
+  local prompt="$1"
+  read -rp "$prompt " answer
+  echo "$answer"
+}
+
+# Yes/No confirmation (returns 0 for yes)
+unishell_confirm() {
+  local prompt="$1 (y/N): "
+  read -rp "$prompt" answer
+  [[ "$answer" =~ ^[Yy]$ ]]
+}
+
 unishell_shell_name() {
   basename "${SHELL:-unknown}"
 }
@@ -69,8 +83,8 @@ unishell_session_off() {
     _unishell_print_optional_tool_instructions _unishell_install_packages \
     gstatus gsave gpush glog gnew gundo sysinfo ports myip diskcheck \
     memcheck service-check docker-clean _unishell_require_git_repo \
-    _unishell_tool_status ok warn info err unishell_session_off unishell \
-    uniexit; do
+    _unishell_tool_status ok warn info err unishell_ask unishell_confirm \
+    unishell_session_off unishell uniexit onboard; do
     unset -f "$fn" 2>/dev/null || true
     unfunction "$fn" 2>/dev/null || true
   done
@@ -143,6 +157,7 @@ Generators:
   mkproject NAME --basic    Create a basic project
   mkproject NAME --python   Create a Python project
   mkproject NAME --node     Create a Node.js project
+  onboard REPO_URL          Clone and automatically set up a project
 
 Git:
   gstatus                   Short git status

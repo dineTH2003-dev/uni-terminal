@@ -73,6 +73,15 @@ mkproject web-demo --node
 
 All projects are created under `~/workspace/projects`.
 
+## Project Onboarding
+
+```bash
+onboard git@github.com:user/project.git
+```
+
+Automates setting up a newly cloned project. Detects the project type (Node.js, Python, Rust, Go) and automatically creates virtual environments, installs dependencies, copies `.env` files, runs database migrations, and handles Docker Compose services. Guides the user interactively through the setup process.
+
+
 ## Git Helpers
 
 ```bash

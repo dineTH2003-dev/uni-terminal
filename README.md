@@ -8,6 +8,7 @@ UniShell is a pure Bash shell toolkit for students, developers, and DevOps begin
 - Navigation aliases for common study and project directories
 - Assignment generator with a ready-to-edit checklist
 - Project generator for basic, Python, and Node.js projects
+- Project Onboarding for one-command cloning and setup
 - Beginner-friendly Git helpers
 - System helper commands for ports, disk, memory, IPs, services, and Docker cleanup
 - `unishell doctor` environment report
@@ -63,6 +64,7 @@ unishell init
 ws
 mkassign dbms-lab-01
 mkproject demo-api --python
+onboard git@github.com:dineTH2003-dev/uni-terminal.git
 openproj
 editfile
 gstatus
@@ -85,6 +87,7 @@ diskcheck
 | `mkproject NAME --basic` | Create a basic project |
 | `mkproject NAME --python` | Create a Python project |
 | `mkproject NAME --node` | Create a Node.js project |
+| `onboard REPO_URL` | Clone and automatically set up a project |
 | `openproj [DIR]` | Fuzzy select and cd into a workspace/project folder |
 | `cdf` | Fuzzy cd into a folder below the current directory |
 | `editfile` | Fuzzy select and open a file in `$EDITOR` |
