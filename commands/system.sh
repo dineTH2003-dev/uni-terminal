@@ -117,3 +117,59 @@ docker-clean() {
       ;;
   esac
 }
+
+# ── killport ──────────────────────────────────────────────────────────────────
+# Find and kill whatever process is listening on a given port.
+# Wraps ss/lsof/netstat + kill into one safe, confirmed operation.
+
+killport() {
+  local port="${1:-}"
+
+  if [ -z "$port" ]; then
+    err "Usage: killport PORT"
+    return 1
+  fi
+
+  if ! printf '%s' "$port" | grep -qE '^[0-9]+$' || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+    err "Invalid port: $port (must be 1–65535)"
+    return 1
+  fi
+
+  local pid="" process_name=""
+
+  # Try ss first (most common on modern Linux), then lsof, then netstat.
+  if command -v ss >/dev/null 2>&1; then
+    pid=$(ss -tlnp 2>/dev/null | grep ":${port} \|:${port}$" | grep -oE 'pid=[0-9]+' | grep -oE '[0-9]+' | head -1)
+  fi
+  if [ -z "$pid" ] && command -v lsof >/dev/null 2>&1; then
+    pid=$(lsof -ti ":$port" 2>/dev/null | head -1)
+  fi
+  if [ -z "$pid" ] && command -v netstat >/dev/null 2>&1; then
+    pid=$(netstat -tlnp 2>/dev/null | awk -v p=":$port" '$4~p{split($NF,a,"/"); print a[1]}' | head -1)
+  fi
+
+  if [ -z "$pid" ]; then
+    warn "No process found listening on port $port."
+    return 0
+  fi
+
+  process_name=$(ps -p "$pid" -o comm= 2>/dev/null || echo "unknown")
+  printf "%b\n" "${YELLOW}[WARN]${NC} Found: ${BOLD}${process_name}${NC} (PID $pid) on port $port"
+  printf "%b" "Kill it? (y/N): "
+  local confirm; read -r confirm
+  case "$confirm" in
+    y|Y|yes|YES)
+      if kill "$pid" 2>/dev/null; then
+        ok "Killed $process_name (PID $pid). Port $port is now free."
+      elif command -v sudo >/dev/null 2>&1 && sudo kill "$pid" 2>/dev/null; then
+        ok "Killed $process_name (PID $pid) with sudo. Port $port is now free."
+      else
+        err "Failed to kill PID $pid — permission denied."
+        return 1
+      fi
+      ;;
+    *)
+      warn "Cancelled."
+      ;;
+  esac
+}
