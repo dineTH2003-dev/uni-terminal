@@ -1,0 +1,39 @@
+# autopsy/patterns.tsv
+# UniShell Autopsy Pattern Database
+# Format (TSV): exit_code<TAB>stderr_regex<TAB>cause<TAB>fix<TAB>explanation
+# exit_code: integer or '*' (wildcard)
+# fix: '-' means no auto-fix available
+# $1 in fix field is replaced with the first regex match group capture
+#
+# ── Node.js / npm ────────────────────────────────────────────────────────────
+1	EADDRINUSE.*:([0-9]+)	Port $1 is already in use by another process	killport $1	Another process grabbed this port first. killport finds and kills it safely.
+1	Cannot find module	Missing Node.js dependency — node_modules is incomplete or corrupt	npm install	package.json lists a dependency that isn't in node_modules. Re-install to fix.
+127	npm: command not found	Node.js / npm is not installed	-	Install Node.js from https://nodejs.org or with: nvm install --lts
+1	ENOENT.*package\.json	No package.json in current directory — wrong folder	cd $(find . -name package.json -maxdepth 3 | head -1 | xargs dirname)	You need to run npm commands from the project root where package.json lives.
+1	ERR_OSSL_EVP	OpenSSL version incompatibility with your Node.js version	export NODE_OPTIONS=--openssl-legacy-provider	Node 17+ changed OpenSSL defaults. This env var restores compatibility.
+#
+# ── Python / pip ─────────────────────────────────────────────────────────────
+1	ModuleNotFoundError: No module named '([^']+)'	Python module '$1' is not installed	pip install $1	The script imported '$1' but it's not in your Python environment.
+1	No module named pip	pip is missing from this Python environment	python -m ensurepip --upgrade	pip isn't available — this bootstraps it from the stdlib.
+1	requirements\.txt.*No such file	requirements.txt not found in current directory	ls *.txt	You ran pip install -r but requirements.txt doesn't exist here.
+127	python3: command not found	Python 3 is not installed or not on PATH	-	Install Python 3 from https://python.org or: sudo apt install python3
+#
+# ── Git ───────────────────────────────────────────────────────────────────────
+128	not a git repository	Not inside a git repository	git init	This directory hasn't been initialized as a git repo. git init creates one.
+1	nothing to commit	Working tree is clean — nothing staged or modified	gstatus	All files are already committed. Use gstatus to see the current state.
+128	does not exist.*remote	Remote branch doesn't exist yet	git push --set-upstream origin $(git branch --show-current)	First push of a new branch needs --set-upstream to create it on the remote.
+1	CONFLICT.*Merge conflict	Merge conflicts detected — manual resolution required	-	Open conflicting files, look for <<<<<<< markers, resolve, then gsave "fix conflicts".
+128	Authentication failed	Git authentication failed — SSH key or credential issue	-	Check: ssh -T git@github.com. If using HTTPS, re-enter credentials or switch to SSH.
+#
+# ── Docker ───────────────────────────────────────────────────────────────────
+1	Cannot connect to the Docker daemon	Docker daemon is not running	sudo systemctl start docker	The Docker engine isn't started. This command starts it.
+1	port is already allocated	Docker port conflict — host port in use	docker ps	A container or process already has this port. See what's running with docker ps.
+#
+# ── Permissions ───────────────────────────────────────────────────────────────
+1	Permission denied	Missing execute permission or wrong file ownership	chmod +x $1	The file exists but the OS won't run it without execute permission.
+126	Permission denied	Script is not executable	chmod +x $1	Add execute permission to run this file directly.
+#
+# ── General ──────────────────────────────────────────────────────────────────
+127	([a-zA-Z0-9_-]+): command not found	'$1' is not installed or not on PATH	which $1	The shell can't find '$1'. Check if it's installed and on your PATH.
+*	No space left on device	Disk is full — no free space	diskcheck	Your disk has no space left. diskcheck shows which mounts are full.
+*	Connection refused	Service is not running or wrong port/host	ports	The target service refused the connection. Check if it's running with 'ports'.
