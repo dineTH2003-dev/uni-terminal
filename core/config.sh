@@ -7,7 +7,7 @@ UNISHELL_CONFIG_LOADED=1
 : "${UNISHELL_ENABLE_FZF:=1}"
 : "${UNISHELL_ENABLE_ZOXIDE:=1}"
 : "${UNISHELL_ZOXIDE_CMD:=j}"
-UNISHELL_VERSION="1.0.0"
+UNISHELL_VERSION="2.0.0"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -56,6 +56,29 @@ unishell_valid_name() {
   [ -n "$name" ] && [[ "$name" != *[^A-Za-z0-9._-]* ]]
 }
 
+# Lazy-load engine: registers self-replacing stub functions for a module.
+# Usage: _unishell_lazy <module_basename> <fn1> [fn2 ...]
+# On first call of any registered fn, sources the real module then re-invokes.
+_unishell_lazy() {
+  local module="$1"; shift
+  local fn
+  for fn in "$@"; do
+    # Use printf+eval to avoid issues with function names containing hyphens
+    eval "
+    ${fn}() {
+      unset -f '${fn}' 2>/dev/null || true
+      if [ -f \"\$UNISHELL_HOME/commands/${module}.sh\" ]; then
+        . \"\$UNISHELL_HOME/commands/${module}.sh\"
+      else
+        printf '%b\\n' \"\\033[0;31m[ERR]\\033[0m  Module not found: commands/${module}.sh\" >&2
+        return 1
+      fi
+      '${fn}' \"\$@\"
+    }
+    "
+  done
+}
+
 unishell_session_off() {
   local unishell_bin="$UNISHELL_HOME/bin"
   local shell_config
@@ -74,7 +97,8 @@ unishell_session_off() {
   local fn
   for fn in \
     unishell_init unishell_doctor unishell_help unishell_shell_name \
-    unishell_shell_config unishell_valid_name mkassign mkproject \
+    unishell_shell_config unishell_valid_name _unishell_lazy \
+    mkassign mkproject whatshere onboard \
     openproj cdf editfile jump _unishell_require_fzf _unishell_find_dirs \
     _unishell_find_files unishell_tools unishell_tools_help \
     unishell_install_tools _unishell_optional_tools \
@@ -83,8 +107,13 @@ unishell_session_off() {
     _unishell_print_optional_tool_instructions _unishell_install_packages \
     gstatus gsave gpush glog gnew gundo sysinfo ports myip diskcheck \
     memcheck service-check docker-clean _unishell_require_git_repo \
-    _unishell_tool_status ok warn info err unishell_ask unishell_confirm \
-    unishell_session_off unishell uniexit onboard; do
+    killport _unishell_tool_status ok warn info err unishell_ask \
+    unishell_confirm unishell_session_off unishell uniexit \
+    autopsy _unishell_autopsy_hook _unishell_autopsy_match \
+    drift _unishell_drift_hook \
+    ghostsave _unishell_ghost_tick \
+    context _unishell_context_hook \
+    broadcast _unishell_broadcast_server; do
     unset -f "$fn" 2>/dev/null || true
     unfunction "$fn" 2>/dev/null || true
   done
@@ -98,7 +127,8 @@ unishell_session_off() {
   unset UNISHELL_HOME UNISHELL_VERSION UNISHELL_CONFIG_LOADED UNISHELL_LOADER_LOADED \
     UNISHELL_ENABLE_FZF UNISHELL_ENABLE_ZOXIDE UNISHELL_ZOXIDE_CMD \
     UNISHELL_FZF_AVAILABLE UNISHELL_FZF_ENABLED \
-    UNISHELL_ZOXIDE_AVAILABLE UNISHELL_ZOXIDE_ENABLED
+    UNISHELL_ZOXIDE_AVAILABLE UNISHELL_ZOXIDE_ENABLED \
+    UNISHELL_LAST_DIR UNISHELL_CONTEXT_DIR UNISHELL_GHOST_LAST UNISHELL_AUTOPSY_ENABLED
   printf "UniShell disabled for this shell session. Run 'source %s' to load it again.\n" "$shell_config"
 }
 
@@ -122,7 +152,7 @@ uniexit() {
 
 unishell_help() {
   cat <<'EOF'
-UniShell v1.0.0
+UniShell v2.0.0
 
 Usage:
   unishell init             Create ~/workspace folders
@@ -157,23 +187,32 @@ Generators:
   mkproject NAME --basic    Create a basic project
   mkproject NAME --python   Create a Python project
   mkproject NAME --node     Create a Node.js project
+  whatshere                 Fingerprint the current project directory
   onboard REPO_URL          Clone and automatically set up a project
 
 Git:
   gstatus                   Short git status
   gsave "message"           Add all files and commit
-  gpush                     Push to the current remote
+  gpush                     Push (guards against pushing to main/master)
   glog                      Last 20 commits as a graph
   gnew branch-name          Create and switch to a branch
   gundo                     Soft reset the last commit
+  ghostsave [squash|restore|status|enable|disable]  Invisible auto-save shadow commits
 
 System:
   sysinfo                   OS, CPU, RAM, and uptime
   ports                     Listening TCP/UDP ports
+  killport PORT             Find and kill the process on a port
   myip                      Local and public IP
   diskcheck                 Disk usage
   memcheck                  Memory usage
   service-check NAME        systemctl status for a service
   docker-clean              Remove stopped containers and dangling images
+
+Intelligence (v2):
+  autopsy [on|off|learn]    Diagnose and fix failed commands automatically
+  drift [snapshot|check|diff|reset]  Detect environment changes that break projects
+  context [log|replay|mark-setup|clear]  Per-project command memory
+  broadcast [start|stop]    Stream your terminal read-only to a browser on LAN
 EOF
 }
