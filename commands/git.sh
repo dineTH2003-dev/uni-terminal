@@ -35,15 +35,41 @@ gsave() {
 gpush() {
   _unishell_require_git_repo || return 1
 
-  local remote_url
-  remote_url="$(git remote get-url --push origin 2>/dev/null || true)"
+  local current_branch; current_branch=$(git branch --show-current 2>/dev/null)
 
-  if [ -n "$remote_url" ]; then
-    info "Pushing to: $remote_url"
-  else
-    warn "No origin remote configured."
-  fi
+  # Guard: warn before pushing directly to main/master/trunk/develop.
+  case "$current_branch" in
+    main|master|trunk|develop)
+      printf "%b\n" "${YELLOW}[WARN]${NC} You are pushing directly to '${BOLD}${current_branch}${NC}${YELLOW}'."
+      printf "%b\n" "         Pushing to protected branches is usually a mistake."
+      printf "%b" "         Create a feature branch instead? (y/N): "
+      local create_branch; read -r create_branch
+      case "$create_branch" in
+        y|Y|yes|YES)
+          printf "%b" "         Branch name: "
+          local new_branch; read -r new_branch
+          if [ -z "$new_branch" ]; then
+            err "Branch name cannot be empty."
+            return 1
+          fi
+          git checkout -b "$new_branch"
+          ok "Switched to '$new_branch'. Pushing this branch instead."
+          current_branch="$new_branch"
+          ;;
+        *)
+          printf "%b" "         Are you SURE you want to push to '$current_branch'? (yes/N): "
+          local force_confirm; read -r force_confirm
+          if [ "$force_confirm" != "yes" ]; then
+            warn "Push cancelled."
+            return 0
+          fi
+          ;;
+      esac
+      ;;
+  esac
 
+  local remote_url; remote_url=$(git remote get-url --push origin 2>/dev/null || true)
+  [ -n "$remote_url" ] && info "Pushing to: $remote_url"
   git push
 }
 
