@@ -1,0 +1,37 @@
+# showme/translations/dbus.tsv
+# D-Bus interface/method → shell command translation table
+# Format (TSV): dbus_interface<TAB>dbus_member<TAB>bus<TAB>command_template<TAB>description
+#
+# ── NetworkManager ──────────────────────────────────────────────────────────
+org.freedesktop.NetworkManager	ActivateConnection	system	nmcli device wifi connect "<network>"	Connect to a WiFi network
+org.freedesktop.NetworkManager	DeactivateConnection	system	nmcli device disconnect wlan0	Disconnect from network
+org.freedesktop.NetworkManager	AddAndActivateConnection	system	nmcli device wifi connect "<ssid>" password "<pass>"	Connect to new WiFi network
+#
+# ── UDisks2 (USB drives, external storage) ──────────────────────────────────
+org.freedesktop.UDisks2.Filesystem	Mount	system	udisksctl mount -b /dev/sdX	Mount a drive or USB device
+org.freedesktop.UDisks2.Filesystem	Unmount	system	udisksctl unmount -b /dev/sdX	Unmount a drive or USB device
+org.freedesktop.UDisks2.Drive	PowerOff	system	udisksctl power-off -b /dev/sdX	Safely eject a drive
+org.freedesktop.UDisks2.Encrypted	Unlock	system	udisksctl unlock -b /dev/sdX	Unlock an encrypted drive
+#
+# ── PackageKit (GNOME Software Center) ──────────────────────────────────────
+org.freedesktop.PackageKit	InstallPackages	system	sudo apt-get install <package>	Install application via Software Center
+org.freedesktop.PackageKit	RemovePackages	system	sudo apt-get remove <package>	Uninstall application via Software Center
+org.freedesktop.PackageKit	UpdatePackages	system	sudo apt-get upgrade	Update packages via Software Center
+org.freedesktop.PackageKit	RefreshCache	system	sudo apt-get update	Refresh package list
+#
+# ── Bluetooth (bluez) ────────────────────────────────────────────────────────
+org.bluez.Device1	Connect	system	bluetoothctl connect <device-mac>	Connect a Bluetooth device
+org.bluez.Device1	Disconnect	system	bluetoothctl disconnect <device-mac>	Disconnect a Bluetooth device
+org.bluez.Device1	Pair	system	bluetoothctl pair <device-mac>	Pair a new Bluetooth device
+org.bluez.Adapter1	StartDiscovery	system	bluetoothctl scan on	Start scanning for Bluetooth devices
+#
+# ── GNOME Display / Mutter ───────────────────────────────────────────────────
+org.gnome.Mutter.DisplayConfig	ApplyMonitorsConfig	session	xrandr --auto  # display configuration changed	Display layout changed
+org.gnome.SettingsDaemon.Power	SetPercentage	session	xbacklight -set <value>  # brightness changed	Screen brightness changed
+#
+# ── GNOME Sound / PulseAudio ─────────────────────────────────────────────────
+org.freedesktop.ReserveDevice1.Audio0	*	session	amixer set Master <volume>%	Audio device reserved (volume change)
+#
+# ── Printers (CUPS) ──────────────────────────────────────────────────────────
+org.cups.cupsd	PrinterAdded	system	lpadmin -p <printer> -v <uri> -m <driver>	Printer added
+org.cups.cupsd	JobCreated	system	lp -d <printer> <file>	Print job sent

@@ -1,0 +1,13 @@
+# showme/translations/fs.tsv
+# Filesystem event → shell command translation table
+# Format (TSV): inotify_event<TAB>command_template<TAB>description
+# $path = full path of affected file/directory
+#
+CREATE,ISDIR	mkdir "$path"	New folder created in file manager
+CREATE	touch "$path"	New empty file created
+MOVED_FROM	mv "$path" <destination>	File/folder rename or move (source)
+MOVED_TO	mv <source> "$path"	File/folder rename or move (destination)
+DELETE,ISDIR	rmdir "$path"	Folder deleted (if empty) or rm -rf "$path"
+DELETE	rm "$path"	File deleted or moved to trash
+CLOSE_WRITE	# Saved: "$path"	File saved by an application
+ATTRIB	chmod <mode> "$path"	File permissions changed
