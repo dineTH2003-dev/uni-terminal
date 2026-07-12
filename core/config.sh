@@ -113,7 +113,9 @@ unishell_session_off() {
     drift _unishell_drift_hook \
     ghostsave _unishell_ghost_tick \
     context _unishell_context_hook \
-    broadcast _unishell_broadcast_server; do
+    broadcast _unishell_broadcast_server \
+    showme _showme_detect_terminal _showme_check_deps _showme_has \
+    _showme_open_window _showme_write_engine _showme_cleanup; do
     unset -f "$fn" 2>/dev/null || true
     unfunction "$fn" 2>/dev/null || true
   done
@@ -214,5 +216,6 @@ Intelligence (v2):
   drift [snapshot|check|diff|reset]  Detect environment changes that break projects
   context [log|replay|mark-setup|clear]  Per-project command memory
   broadcast [start|stop]    Stream your terminal read-only to a browser on LAN
+  showme [stop|--inline]    Show commands behind every GUI action in real time
 EOF
 }

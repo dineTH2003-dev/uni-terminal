@@ -54,6 +54,7 @@ _unishell_lazy drift      drift
 _unishell_lazy ghostsave  ghostsave
 _unishell_lazy context    context
 _unishell_lazy broadcast  broadcast
+_unishell_lazy showme    showme
 
 # ── Register PROMPT_COMMAND hooks for passive background features ─────────────
 # These hooks are tiny — they only fire meaningful logic when state changes.
