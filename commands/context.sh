@@ -46,7 +46,7 @@ _unishell_context_hook() {
   mkdir -p "$_CONTEXT_DIR"
 
   # Show "last active" summary only when first entering this dir this session.
-  local session_marker="/dev/shm/unishell_ctx_$$_$(_context_project_id)"
+  local session_marker="${UNISHELL_TMPDIR:-/tmp}/unishell_ctx_$$_$(_context_project_id)"
   if [ ! -f "$session_marker" ]; then
     touch "$session_marker"
     if [ -f "$log" ]; then

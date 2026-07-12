@@ -34,6 +34,7 @@ _unishell_clear_command_aliases() {
 }
 
 _unishell_source_file "$UNISHELL_HOME/core/config.sh"
+_unishell_source_file "$UNISHELL_HOME/core/platform.sh"
 _unishell_clear_command_aliases
 _unishell_source_file "$UNISHELL_HOME/core/aliases.sh"
 _unishell_source_file "$UNISHELL_HOME/integrations/fzf.sh"

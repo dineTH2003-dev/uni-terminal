@@ -6,7 +6,7 @@
 # optionally run the fix. Zero internet. Zero daemon. Works offline forever.
 
 _AUTOPSY_PATTERNS="$UNISHELL_HOME/autopsy/patterns.tsv"
-_AUTOPSY_STDERR="/dev/shm/unishell_stderr_$$"
+_AUTOPSY_STDERR="${UNISHELL_TMPDIR:-/tmp}/unishell_stderr_$$"
 _AUTOPSY_LAST_CMD=""
 _AUTOPSY_LAST_EXIT=0
 

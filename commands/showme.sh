@@ -100,7 +100,7 @@ _showme_open_window() {
 _showme_write_engine() {
   local watch_dirs_args="$1"   # space-separated list of dirs to watch
   local layers="$2"            # comma-separated: fs,dbus,journal
-  local engine="/dev/shm/unishell_showme_engine_$$.sh"
+  local engine="${UNISHELL_TMPDIR:-/tmp}/unishell_showme_engine_$$.sh"
 
   cat >"$engine" <<ENGINEEOF
 #!/usr/bin/env bash
@@ -395,6 +395,30 @@ showme() {
 
   case "$subcmd" in
     start|"")
+      # Platform guard — showme needs Linux GUI tools.
+      case "${UNISHELL_PLATFORM:-linux}" in
+        gitbash)
+          err "showme requires a Linux desktop environment."
+          info "On Windows, use WSL2 for full UniShell support."
+          info "Install WSL: wsl --install (in PowerShell as Admin)"
+          return 1
+          ;;
+        wsl)
+          if [ "${UNISHELL_HAS_GUI:-0}" = "0" ]; then
+            warn "No GUI detected in WSL. showme works best with a desktop."
+            info "Use 'showme --inline' to monitor filesystem changes in this terminal."
+            info "Or install WSLg for GUI support: https://github.com/microsoft/wslg"
+          fi
+          ;;
+        macos)
+          if ! command -v fswatch >/dev/null 2>&1; then
+            warn "fswatch is required for showme on macOS (replaces inotifywait)."
+            info "Install: brew install fswatch"
+            return 1
+          fi
+          ;;
+      esac
+
       _showme_check_deps || return 1
 
       # Determine directories to watch.
@@ -442,7 +466,7 @@ showme() {
       done < <(pgrep -f "unishell_showme_engine" 2>/dev/null)
 
       # Remove any leftover engine scripts from /dev/shm.
-      rm -f /dev/shm/unishell_showme_engine_*.sh 2>/dev/null || true
+      rm -f "${UNISHELL_TMPDIR:-/tmp}"/unishell_showme_engine_*.sh 2>/dev/null || true
 
       if [ "$killed" -gt 0 ]; then
         ok "Stopped $killed showme session(s)."

@@ -6,21 +6,57 @@ sysinfo() {
 
   printf "\n"
   info "CPU"
-  if command -v lscpu >/dev/null 2>&1; then
-    lscpu | awk -F: '/Model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}'
-  elif [ -r /proc/cpuinfo ]; then
-    awk -F: '/model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo
-  else
-    warn "CPU details unavailable"
-  fi
+  case "${UNISHELL_PLATFORM:-linux}" in
+    macos)
+      sysctl -n machdep.cpu.brand_string 2>/dev/null || warn "CPU info unavailable"
+      ;;
+    gitbash)
+      # Parse systeminfo on Windows (Git Bash).
+      if command -v systeminfo >/dev/null 2>&1; then
+        systeminfo 2>/dev/null | awk -F: '/Processor/ {gsub(/^[ \t]+/, "", $2); print $2; exit}'
+      else
+        warn "CPU details unavailable on Git Bash"
+      fi
+      ;;
+    *)
+      if command -v lscpu >/dev/null 2>&1; then
+        lscpu | awk -F: '/Model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}'
+      elif [ -r /proc/cpuinfo ]; then
+        awk -F: '/model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo
+      else
+        warn "CPU details unavailable"
+      fi
+      ;;
+  esac
 
   printf "\n"
   info "Memory"
-  if command -v free >/dev/null 2>&1; then
-    free -h
-  else
-    warn "free command not available"
-  fi
+  case "${UNISHELL_PLATFORM:-linux}" in
+    macos)
+      local mem_bytes; mem_bytes=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+      local mem_gb=$(( mem_bytes / 1073741824 ))
+      printf "Total: %d GB\n" "$mem_gb"
+      # Show memory pressure via vm_stat.
+      vm_stat 2>/dev/null | awk '/Pages free/ {free=$NF} /Pages active/ {active=$NF} END {
+        gsub(/\./,"",free); gsub(/\./,"",active);
+        printf "Free:  %.1f GB  Active: %.1f GB\n", free*4096/1073741824, active*4096/1073741824
+      }'
+      ;;
+    gitbash)
+      if command -v systeminfo >/dev/null 2>&1; then
+        systeminfo 2>/dev/null | grep -i "Total Physical Memory\|Available Physical Memory"
+      else
+        warn "Memory info unavailable on Git Bash"
+      fi
+      ;;
+    *)
+      if command -v free >/dev/null 2>&1; then
+        free -h
+      else
+        warn "free command not available"
+      fi
+      ;;
+  esac
 
   printf "\n"
   info "Uptime"
@@ -32,25 +68,56 @@ sysinfo() {
 }
 
 ports() {
-  if command -v ss >/dev/null 2>&1; then
-    ss -tulnp
-  elif command -v netstat >/dev/null 2>&1; then
-    netstat -tulnp
-  else
-    err "Neither ss nor netstat is installed."
-    return 1
-  fi
+  case "${UNISHELL_PLATFORM:-linux}" in
+    macos)
+      if command -v lsof >/dev/null 2>&1; then
+        lsof -iTCP -sTCP:LISTEN -n -P
+      else
+        err "lsof not available."
+        return 1
+      fi
+      ;;
+    gitbash)
+      if command -v netstat >/dev/null 2>&1; then
+        netstat -an | grep LISTEN
+      else
+        err "ports is not available on Git Bash."
+        info "Use PowerShell: Get-NetTCPConnection -State Listen"
+        return 1
+      fi
+      ;;
+    *)
+      if command -v ss >/dev/null 2>&1; then
+        ss -tulnp
+      elif command -v netstat >/dev/null 2>&1; then
+        netstat -tulnp
+      else
+        err "Neither ss nor netstat is installed."
+        return 1
+      fi
+      ;;
+  esac
 }
 
 myip() {
   info "Local IP"
-  if command -v hostname >/dev/null 2>&1; then
-    hostname -I 2>/dev/null | awk '{print $1}'
-  elif command -v ip >/dev/null 2>&1; then
-    ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}'
-  else
-    warn "Could not determine local IP"
-  fi
+  case "${UNISHELL_PLATFORM:-linux}" in
+    macos)
+      ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2; exit}'
+      ;;
+    gitbash)
+      ipconfig 2>/dev/null | awk '/IPv4/ {print $NF; exit}'
+      ;;
+    *)
+      if command -v hostname >/dev/null 2>&1; then
+        hostname -I 2>/dev/null | awk '{print $1}'
+      elif command -v ip >/dev/null 2>&1; then
+        ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}'
+      else
+        warn "Could not determine local IP"
+      fi
+      ;;
+  esac
 
   info "Public IP"
   if command -v curl >/dev/null 2>&1; then
@@ -69,12 +136,30 @@ diskcheck() {
 }
 
 memcheck() {
-  if command -v free >/dev/null 2>&1; then
-    free -h
-  else
-    err "free command not available."
-    return 1
-  fi
+  case "${UNISHELL_PLATFORM:-linux}" in
+    macos)
+      local mem_bytes; mem_bytes=$(sysctl -n hw.memsize 2>/dev/null || echo 0)
+      local mem_gb=$(( mem_bytes / 1073741824 ))
+      printf "Total: %d GB\n" "$mem_gb"
+      vm_stat 2>/dev/null
+      ;;
+    gitbash)
+      if command -v systeminfo >/dev/null 2>&1; then
+        systeminfo 2>/dev/null | grep -i "Physical Memory"
+      else
+        err "Memory info unavailable on Git Bash."
+        return 1
+      fi
+      ;;
+    *)
+      if command -v free >/dev/null 2>&1; then
+        free -h
+      else
+        err "free command not available."
+        return 1
+      fi
+      ;;
+  esac
 }
 
 service-check() {
@@ -85,12 +170,28 @@ service-check() {
     return 1
   fi
 
-  if ! command -v systemctl >/dev/null 2>&1; then
-    err "systemctl is not available on this system."
-    return 1
-  fi
-
-  systemctl status "$service_name"
+  case "${UNISHELL_PLATFORM:-linux}" in
+    macos)
+      if command -v launchctl >/dev/null 2>&1; then
+        launchctl list 2>/dev/null | grep -i "$service_name"
+      else
+        err "launchctl not available."
+        return 1
+      fi
+      ;;
+    gitbash)
+      err "service-check is not available on Git Bash."
+      info "Use PowerShell: Get-Service $service_name"
+      return 1
+      ;;
+    *)
+      if ! command -v systemctl >/dev/null 2>&1; then
+        err "systemctl is not available on this system."
+        return 1
+      fi
+      systemctl status "$service_name"
+      ;;
+  esac
 }
 
 docker-clean() {
@@ -119,8 +220,6 @@ docker-clean() {
 }
 
 # ── killport ──────────────────────────────────────────────────────────────────
-# Find and kill whatever process is listening on a given port.
-# Wraps ss/lsof/netstat + kill into one safe, confirmed operation.
 
 killport() {
   local port="${1:-}"
@@ -137,16 +236,28 @@ killport() {
 
   local pid="" process_name=""
 
-  # Try ss first (most common on modern Linux), then lsof, then netstat.
-  if command -v ss >/dev/null 2>&1; then
-    pid=$(ss -tlnp 2>/dev/null | grep ":${port} \|:${port}$" | grep -oE 'pid=[0-9]+' | grep -oE '[0-9]+' | head -1)
-  fi
-  if [ -z "$pid" ] && command -v lsof >/dev/null 2>&1; then
-    pid=$(lsof -ti ":$port" 2>/dev/null | head -1)
-  fi
-  if [ -z "$pid" ] && command -v netstat >/dev/null 2>&1; then
-    pid=$(netstat -tlnp 2>/dev/null | awk -v p=":$port" '$4~p{split($NF,a,"/"); print a[1]}' | head -1)
-  fi
+  case "${UNISHELL_PLATFORM:-linux}" in
+    macos)
+      pid=$(lsof -ti ":$port" 2>/dev/null | head -1)
+      ;;
+    gitbash)
+      err "killport is not available on Git Bash."
+      info "Use PowerShell: Stop-Process -Id (Get-NetTCPConnection -LocalPort $port).OwningProcess"
+      return 1
+      ;;
+    *)
+      # Try ss first, then lsof, then netstat.
+      if command -v ss >/dev/null 2>&1; then
+        pid=$(ss -tlnp 2>/dev/null | grep ":${port} \|:${port}$" | grep -oE 'pid=[0-9]+' | grep -oE '[0-9]+' | head -1)
+      fi
+      if [ -z "$pid" ] && command -v lsof >/dev/null 2>&1; then
+        pid=$(lsof -ti ":$port" 2>/dev/null | head -1)
+      fi
+      if [ -z "$pid" ] && command -v netstat >/dev/null 2>&1; then
+        pid=$(netstat -tlnp 2>/dev/null | awk -v p=":$port" '$4~p{split($NF,a,"/"); print a[1]}' | head -1)
+      fi
+      ;;
+  esac
 
   if [ -z "$pid" ]; then
     warn "No process found listening on port $port."

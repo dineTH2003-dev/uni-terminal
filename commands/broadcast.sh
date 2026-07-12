@@ -9,8 +9,8 @@
 # Read-only: the HTTP server only reads the FIFO, it never writes to the TTY.
 
 _BROADCAST_PORT="${UNISHELL_BROADCAST_PORT:-7681}"
-_BROADCAST_FIFO="/dev/shm/unishell_cast_$$"
-_BROADCAST_PID_FILE="/dev/shm/unishell_broadcast_pid_$$"
+_BROADCAST_FIFO="${UNISHELL_TMPDIR:-/tmp}/unishell_cast_$$"
+_BROADCAST_PID_FILE="${UNISHELL_TMPDIR:-/tmp}/unishell_broadcast_pid_$$"
 _BROADCAST_SCRIPT_PID=""
 
 # ── Dependency check ─────────────────────────────────────────────────────────
@@ -245,7 +245,7 @@ broadcast() {
 
       # Create the RAM-backed FIFO.
       rm -f "$_BROADCAST_FIFO"
-      mkfifo "$_BROADCAST_FIFO" || { err "Failed to create FIFO in /dev/shm"; return 1; }
+      mkfifo "$_BROADCAST_FIFO" || { err "Failed to create FIFO"; return 1; }
 
       # Start the HTTP server in the background.
       _unishell_broadcast_server "$_BROADCAST_FIFO" &

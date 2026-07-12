@@ -54,11 +54,21 @@ parse_args() {
 
 detect_shell_config() {
   local shell_name
-  shell_name="$(basename "${SHELL:-}")"
+  shell_name="$(basename "${SHELL:-bash}")"
+
+  # On Git Bash (MSYS2/MinGW), bash reads .bash_profile, not .bashrc.
+  local platform
+  platform="$(detect_platform)"
 
   case "$shell_name" in
     zsh) printf "%s\n" "$HOME/.zshrc" ;;
-    bash) printf "%s\n" "$HOME/.bashrc" ;;
+    bash)
+      if [ "$platform" = "gitbash" ] && [ -f "$HOME/.bash_profile" ]; then
+        printf "%s\n" "$HOME/.bash_profile"
+      else
+        printf "%s\n" "$HOME/.bashrc"
+      fi
+      ;;
     *)
       warn "Unsupported shell '$shell_name'. Using $HOME/.bashrc." >&2
       printf "%s\n" "$HOME/.bashrc"
@@ -66,11 +76,26 @@ detect_shell_config() {
   esac
 }
 
+detect_platform() {
+  case "$(uname -s 2>/dev/null)" in
+    Linux*)
+      if [ -f /proc/version ] && grep -qi 'microsoft\|wsl' /proc/version 2>/dev/null; then
+        printf "wsl"
+      else
+        printf "linux"
+      fi
+      ;;
+    Darwin*) printf "macos" ;;
+    MINGW*|MSYS*|CYGWIN*) printf "gitbash" ;;
+    *) printf "unknown" ;;
+  esac
+}
+
 copy_installation() {
   mkdir -p "$TARGET_DIR"
 
   local item
-  for item in bin core commands integrations templates docs tests README.md LICENSE CONTRIBUTING.md install.sh uninstall.sh; do
+  for item in bin core commands integrations templates docs tests autopsy showme README.md LICENSE CONTRIBUTING.md install.sh uninstall.sh; do
     if [ -e "$REPO_ROOT/$item" ]; then
       cp -R "$REPO_ROOT/$item" "$TARGET_DIR/"
     fi
@@ -223,6 +248,33 @@ main() {
   "$TARGET_DIR/bin/unishell" init
 
   ok "UniShell installed"
+
+  # Platform-specific messages.
+  local platform
+  platform="$(detect_platform)"
+  case "$platform" in
+    wsl)
+      printf "\n"
+      ok "Running inside WSL — full UniShell support."
+      info "Note: 'showme' requires a GUI desktop (install WSLg or use --inline mode)."
+      ;;
+    gitbash)
+      printf "\n"
+      warn "Running in Git Bash — core features available."
+      info "Limited: showme, ports, killport, service-check are not available."
+      info "For full support, use WSL2: wsl --install (in PowerShell as Admin)"
+      ;;
+    macos)
+      printf "\n"
+      ok "Running on macOS — near-full UniShell support."
+      info "Install Homebrew tools for best experience: brew install fzf zoxide fswatch"
+      ;;
+    linux)
+      ok "Running on Linux — full UniShell support."
+      ;;
+  esac
+
+  printf "\n"
   info "Reload your shell with: source $shell_config"
   info "Then run: unishell doctor"
 }
