@@ -12,33 +12,22 @@ _AUTOPSY_LAST_EXIT=0
 
 # ── Trap hooks ───────────────────────────────────────────────────────────────
 
-# Called by DEBUG trap before every command: records what's about to run.
-# Unified DEBUG hook for Bash and Zsh
+# Called before every command: records what's about to run.
+# In Bash this is invoked via the DEBUG trap.
+# In Zsh this is invoked via the preexec hook (registered below).
 _unishell_autopsy_debug() {
-  # Record the command about to be executed, avoiding internal UniShell functions.
-  local cmd="${BASH_COMMAND:-${ZSH_COMMAND:-}}"
+  # In Zsh, preexec receives the command line as $1.
+  # In Bash, BASH_COMMAND holds the current command.
+  local cmd="${1:-${BASH_COMMAND:-}}"
+  # Avoid recording internal UniShell functions or empty commands.
   case "$cmd" in
-    _unishell_*|unishell_*|ok*|warn*|info*|err*) return ;;
+    _unishell_*|unishell_*|ok\ *|warn\ *|info\ *|err\ *) return ;;
+    "") return ;;
     *) _AUTOPSY_LAST_CMD="$cmd" ;;
   esac
 }
-# Zsh-specific hook registration (if Zsh is detected)
-if [ -n "${ZSH_VERSION:-}" ]; then
-  # Zsh provides preexec_functions array for before‑command hooks.
-  autoload -Uz add-zsh-hook 2>/dev/null || true
-  add-zsh-hook preexec _unishell_autopsy_debug
-  # Zsh error trap – called when a command exits with non‑zero status.
-  function TRAPERR() { _unishell_autopsy_hook; }
-fi
-  # Avoid recording internal UniShell functions or empty commands.
-  local cmd="$BASH_COMMAND"
-  case "$cmd" in
-    _unishell_*|unishell_*|ok\ *|warn\ *|info\ *|err\ *) return ;;
-    *) _AUTOPSY_LAST_CMD="$cmd" ;;
-  esac
 
-
-# Called by ERR trap after any command exits non-zero.
+# Called by ERR trap (Bash) or TRAPERR (Zsh) after any command exits non-zero.
 _unishell_autopsy_hook() {
   local exit_code=$?
   _AUTOPSY_LAST_EXIT=$exit_code
@@ -125,16 +114,30 @@ autopsy() {
   case "$subcmd" in
     on|enable)
       UNISHELL_AUTOPSY_ENABLED=1
-      # Activate the ERR trap for this session.
-      trap '_unishell_autopsy_hook' ERR
-      trap '_unishell_autopsy_debug' DEBUG
-      # Redirect all stderr to tee into our capture file.
+      if [ -n "${ZSH_VERSION:-}" ]; then
+        # Zsh: use preexec + TRAPERR hooks
+        autoload -Uz add-zsh-hook 2>/dev/null || true
+        add-zsh-hook preexec _unishell_autopsy_debug 2>/dev/null || true
+        # Define TRAPERR as a Zsh trap function
+        eval 'function TRAPERR() { _unishell_autopsy_hook; }'
+      else
+        # Bash: use DEBUG + ERR traps
+        trap '_unishell_autopsy_hook' ERR
+        trap '_unishell_autopsy_debug' DEBUG
+      fi
+      # Redirect stderr through tee so we can capture it
       exec 2> >(tee "$_AUTOPSY_STDERR" >&2)
       ok "Autopsy enabled — failed commands will be analyzed automatically."
       ;;
     off|disable)
       UNISHELL_AUTOPSY_ENABLED=0
-      trap - ERR DEBUG
+      if [ -n "${ZSH_VERSION:-}" ]; then
+        add-zsh-hook -d preexec _unishell_autopsy_debug 2>/dev/null || true
+        # Remove TRAPERR by redefining it as a no-op
+        eval 'function TRAPERR() { :; }'
+      else
+        trap - ERR DEBUG
+      fi
       ok "Autopsy disabled."
       ;;
     status)
@@ -161,7 +164,7 @@ autopsy() {
       mkdir -p "$(dirname "$user_patterns")"
       # Simple literal pattern from the command fragment.
       local escaped
-      escaped="$(printf '%s' "$learn_cmd" | sed 's/[.*+?^${}()|[\]\\]/\\&/g')"
+      escaped="$(printf '%s' "$learn_cmd" | sed 's/[.*+?^${}()|[\\]\\]/\\&/g')"
       printf "%s\t%s\t%s\t%s\t%s\n" \
         "*" "$escaped" "User-defined pattern for: $learn_cmd" "$learn_fix" "$learn_why" \
         >> "$user_patterns"
@@ -190,7 +193,13 @@ EOF
 
 # Auto-activate autopsy when this module first loads (unless explicitly disabled).
 if [ "${UNISHELL_AUTOPSY_ENABLED:-1}" = "1" ]; then
-  trap '_unishell_autopsy_hook' ERR
-  trap '_unishell_autopsy_debug' DEBUG
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    autoload -Uz add-zsh-hook 2>/dev/null || true
+    add-zsh-hook preexec _unishell_autopsy_debug 2>/dev/null || true
+    eval 'function TRAPERR() { _unishell_autopsy_hook; }'
+  else
+    trap '_unishell_autopsy_hook' ERR
+    trap '_unishell_autopsy_debug' DEBUG
+  fi
   exec 2> >(tee "$_AUTOPSY_STDERR" >&2)
 fi
