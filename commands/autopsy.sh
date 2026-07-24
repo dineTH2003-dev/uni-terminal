@@ -36,7 +36,7 @@ fi
     _unishell_*|unishell_*|ok\ *|warn\ *|info\ *|err\ *) return ;;
     *) _AUTOPSY_LAST_CMD="$cmd" ;;
   esac
-}
+
 
 # Called by ERR trap after any command exits non-zero.
 _unishell_autopsy_hook() {
