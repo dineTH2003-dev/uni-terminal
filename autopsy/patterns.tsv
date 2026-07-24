@@ -37,3 +37,55 @@
 127	([a-zA-Z0-9_-]+): command not found	'$1' is not installed or not on PATH	which $1	The shell can't find '$1'. Check if it's installed and on your PATH.
 *	No space left on device	Disk is full — no free space	diskcheck	Your disk has no space left. diskcheck shows which mounts are full.
 *	Connection refused	Service is not running or wrong port/host	ports	The target service refused the connection. Check if it's running with 'ports'.
+# Autopsy user‑patterns – common mistakes for learners
+# Format: exit_code<TAB>stderr_regex<TAB>cause<TAB>fix<TAB>explanation (optional)
+# Use "*" as a wildcard exit code to match any status.
+# --------------------------------------------------------------------------
+# 1. Bash/Zsh command‑not‑found (Bash prints only "command not found", Zsh includes the command name)
+127	^command not found$\tThe command you typed does not exist in $PATH.\twhich $1\tCheck spelling or install the missing program.
+127	^(.+): command not found$\t"$1" is not installed or not on $PATH.\twhich $1\tVerify the binary exists and is reachable.
+# 2. Git unknown sub‑command
+1	git: '[^']*' is not a git command\tYou tried an invalid git sub‑command.\tgit help\tRun "git help" or use tab‑completion to see valid commands.
+# 3. Git push without upstream
+128	fatal: The current branch (.+) has no upstream branch\tYour branch has no remote tracking branch.\tgit push --set-upstream origin $1\tSet the upstream so future pushes know where to go.
+# 4. NPM package not found / missing node_modules
+1	Cannot find module '([^']+)'\tNode.js module "$1" is missing.\tnpm install $1\tInstall the missing dependency.
+1	ENOENT.*package\.json\tYou are not in a Node.js project directory.\tcd $(git rev-parse --show-toplevel)\tNavigate to the folder containing package.json.
+127	npm: command not found\tNode.js / npm is not installed.\t-\tInstall Node.js from https://nodejs.org or use nvm.
+# 5. Python import errors
+1	ModuleNotFoundError: No module named '([^']+)'\tPython module "$1" is not installed.\tpip install $1\tInstall the missing Python package.
+1	ImportError: cannot import name '([^']+)'\tThe requested symbol does not exist in the module.\t-\tCheck the module's documentation for the correct name.
+127	python3: command not found\tPython 3 is not installed or not on $PATH.\t-\tInstall Python 3 (e.g., sudo apt install python3).
+# 6. Docker daemon not running
+1	Cannot connect to the Docker daemon\tDocker service is not started.\tsudo systemctl start docker\tStart the Docker engine.
+1	port is already allocated\tA container or process already uses the requested host port.\tdocker ps\tInspect running containers and stop the conflicting one.
+# 7. Permission denied (general)
+1	Permission denied$\tYou lack permission to execute the file.\tchmod +x $1\tMake the file executable.
+126	Permission denied$\tYou lack permission to access the resource.\tchmod +r $1\tAdjust file permissions.
+# 8. Common compilation / make errors
+2	make: \*\*\* \[([^]]+)\] Error 1\tMake target "$1" failed.\t-\tCheck the makefile and required dependencies.
+# 9. Git merge conflict
+1	CONFLICT\tMerge conflict detected.\t-\tOpen conflicted files, resolve markers, then commit.
+# 10. Git authentication failed
+128	Authentication failed\tGit cannot authenticate with the remote.\t-\tCheck SSH keys or HTTPS credentials.
+# 11. npm scripts not found
+1	npm ERR! missing script: (.+)\tPackage.json does not define the npm script "$1".\t-\tAdd the script to the "scripts" section of package.json.
+# 12. pip requirements missing
+1	No such file or directory: 'requirements.txt'\tMissing requirements file.\t-\tCreate requirements.txt or run pip install directly.
+# 13. General tool not installed
+*\t([a-zA-Z0-9_-]+): command not found\t"$1" is not installed or not on $PATH.\twhich $1\tInstall the missing tool.
+# 14. Disk full
+*\tNo space left on device\tThe filesystem is out of space.\tdf -h\tFree up space or enlarge the partition.
+# 15. Connection refused (service not running)
+*\tConnection refused\tTarget service is not reachable.\t-\tStart the service or check the host/port.
+# 16. Incompatible OpenSSL for Node.js
+1	ERR_OSSL_EVP\tOpenSSL version incompatibility with Node.js.\texport NODE_OPTIONS=--openssl-legacy-provider\tTemporarily use legacy OpenSSL defaults.
+# 17. Invalid JSON (e.g., package.json syntax error)
+1	Unexpected token.*in JSON at position\tMalformed JSON file (likely package.json).\t-\tFix the syntax error in the JSON file.
+# 18. Git branch does not exist on remote
+128\tremote: Repository not found\tRemote repository URL is incorrect or you lack access.\t-\tVerify the remote URL with "git remote -v".
+# 19. Yarn lock mismatch
+1\tYARN lockfile mismatch\tYour yarn.lock does not match package.json.\tyarn install\tRegenerate the lockfile.
+# 20. pip version mismatch
+1\tRequirement already satisfied: (.+)\tThe requested package is already installed.\t-\tNo action needed.
+# End of user‑patterns

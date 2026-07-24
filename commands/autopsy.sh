@@ -13,7 +13,23 @@ _AUTOPSY_LAST_EXIT=0
 # ── Trap hooks ───────────────────────────────────────────────────────────────
 
 # Called by DEBUG trap before every command: records what's about to run.
+# Unified DEBUG hook for Bash and Zsh
 _unishell_autopsy_debug() {
+  # Record the command about to be executed, avoiding internal UniShell functions.
+  local cmd="${BASH_COMMAND:-${ZSH_COMMAND:-}}"
+  case "$cmd" in
+    _unishell_*|unishell_*|ok*|warn*|info*|err*) return ;;
+    *) _AUTOPSY_LAST_CMD="$cmd" ;;
+  esac
+}
+# Zsh-specific hook registration (if Zsh is detected)
+if [ -n "${ZSH_VERSION:-}" ]; then
+  # Zsh provides preexec_functions array for before‑command hooks.
+  autoload -Uz add-zsh-hook 2>/dev/null || true
+  add-zsh-hook preexec _unishell_autopsy_debug
+  # Zsh error trap – called when a command exits with non‑zero status.
+  function TRAPERR() { _unishell_autopsy_hook; }
+fi
   # Avoid recording internal UniShell functions or empty commands.
   local cmd="$BASH_COMMAND"
   case "$cmd" in
