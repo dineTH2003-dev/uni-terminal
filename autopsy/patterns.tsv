@@ -45,7 +45,7 @@
 127	^command not found$\tThe command you typed does not exist in $PATH.\twhich $1\tCheck spelling or install the missing program.
 127	^(.+): command not found$\t"$1" is not installed or not on $PATH.\twhich $1\tVerify the binary exists and is reachable.
 # 2. Git unknown sub‑command
-1	git: '[^']*' is not a git command\.?\tYou tried an invalid git sub‑command.\tgit help\tRun "git help" or use tab‑completion to see valid commands.
+1	git: '[^']*' is not a git command\.?\s*	You tried an invalid git sub‑command.	git help	Run "git help" or use tab‑completion to see valid commands.
 # 3. Git push without upstream
 128	fatal: The current branch (.+) has no upstream branch\tYour branch has no remote tracking branch.\tgit push --set-upstream origin $1\tSet the upstream so future pushes know where to go.
 # 4. NPM package not found / missing node_modules
