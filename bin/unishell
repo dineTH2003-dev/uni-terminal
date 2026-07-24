@@ -11,19 +11,9 @@ command_name="${1:-help}"
 shift || true
 
 case "$command_name" in
-  init)
-    unishell_init "$@"
-    ;;
-  doctor)
-    unishell_doctor "$@"
-    ;;
-  tools)
-    unishell_tools "$@"
-    ;;
   off|exit|disable)
     warn "'unishell off' must run from a shell session where UniShell is sourced."
     info "Reload your shell config, then run: unishell off"
-    info "For Zsh: source ~/.zshrc"
     exit 1
     ;;
   help|-h|--help)

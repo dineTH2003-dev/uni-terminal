@@ -27,35 +27,16 @@ _unishell_source_file() {
   fi
 }
 
-_unishell_clear_command_aliases() {
-  unalias unishell uniexit mkassign mkproject openproj cdf editfile jump \
-    gstatus gsave gpush glog gnew gundo sysinfo ports myip diskcheck \
-    memcheck service-check docker-clean 2>/dev/null || true
-}
-
 _unishell_source_file "$UNISHELL_HOME/core/config.sh"
 _unishell_source_file "$UNISHELL_HOME/core/platform.sh"
-_unishell_clear_command_aliases
-_unishell_source_file "$UNISHELL_HOME/core/aliases.sh"
-_unishell_source_file "$UNISHELL_HOME/integrations/fzf.sh"
-_unishell_source_file "$UNISHELL_HOME/integrations/zoxide.sh"
 
 # ── Lazy-load all command modules (zero RAM cost until first use) ─────────────
-_unishell_lazy workspace  unishell_init
-_unishell_lazy assignment mkassign
-_unishell_lazy project    mkproject whatshere
-_unishell_lazy navigation openproj cdf editfile jump
-_unishell_lazy git        gstatus gsave gpush glog gnew gundo
-_unishell_lazy system     sysinfo ports myip diskcheck memcheck service-check docker-clean killport
-_unishell_lazy tools      unishell_tools unishell_install_tools
-_unishell_lazy doctor     unishell_doctor
-_unishell_lazy onboard    onboard
 _unishell_lazy autopsy    autopsy
 _unishell_lazy drift      drift
 _unishell_lazy ghostsave  ghostsave
 _unishell_lazy context    context
 _unishell_lazy broadcast  broadcast
-_unishell_lazy showme    showme
+_unishell_lazy showme     showme
 
 # ── Register PROMPT_COMMAND hooks for passive background features ─────────────
 # These hooks are tiny — they only fire meaningful logic when state changes.
@@ -92,5 +73,5 @@ _unishell_ghost_tick()   { :; }
 _unishell_drift_hook()   { :; }
 _unishell_context_hook() { :; }
 
-unset -f _unishell_source_file _unishell_clear_command_aliases
+unset -f _unishell_source_file
 unset _unishell_loader_path

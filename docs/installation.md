@@ -2,11 +2,17 @@
 
 ## Requirements
 
-- Linux
-- Bash or Zsh
-- Git for cloning the repository
+- Bash 4.0+ or Zsh 5.0+
+- Git (for ghostsave and installation)
+- Standard Linux tools: `awk`, `grep`, `sed`, `nc` (netcat)
 
-UniShell itself is pure Bash and does not require a package manager dependency. Optional fuzzy navigation uses `fzf` and optional smart jumping uses `zoxide`.
+### Optional (for specific features)
+
+| Tool | Feature | Install |
+| --- | --- | --- |
+| `inotify-tools` | showme filesystem layer | `sudo apt install inotify-tools` |
+| `fswatch` | showme on macOS | `brew install fswatch` |
+| `dbus-tools` | showme D-Bus layer | Pre-installed on GNOME/KDE |
 
 ## Install
 
@@ -16,13 +22,7 @@ cd uni-terminal
 ./install.sh
 ```
 
-The installer tries to install the optional `fzf` and `zoxide` tools automatically. To skip optional tool installation:
-
-```bash
-./install.sh --no-optional-tools
-```
-
-Reload your shell:
+For Bash:
 
 ```bash
 source ~/.bashrc
@@ -37,75 +37,49 @@ source ~/.zshrc
 ## Verify
 
 ```bash
-unishell doctor
-unishell tools status
+unishell help
+unishell version
 ```
 
-## Update Existing Install
-
-Pulling the Git repository only updates the clone directory. Zsh and Bash load UniShell from `~/.unishell`, so run the installer again after pulling changes:
+## Update
 
 ```bash
+cd uni-terminal
 git pull
 ./install.sh
-source ~/.zshrc
-```
-
-For Bash:
-
-```bash
 source ~/.bashrc
 ```
 
-## Temporary Disable
+## Cross-Platform Notes
 
-UniShell is sourced into your current Bash or Zsh shell. To return the current terminal tab to a normal shell session:
+### WSL2 (Windows)
 
-```bash
-unishell off
+Full support. Install WSL2 first:
+
+```powershell
+# In PowerShell as Administrator
+wsl --install
 ```
 
-This removes UniShell commands, aliases, and PATH changes only from the current session. To load UniShell again:
+Then install UniShell inside WSL as normal.
+
+Note: `showme` requires WSLg for GUI monitoring. Use `showme --inline` for filesystem-only monitoring without a GUI.
+
+### macOS
+
+Near-full support. Install `fswatch` for the `showme` feature:
 
 ```bash
-source ~/.zshrc
+brew install fswatch
 ```
 
-For Bash:
+### Git Bash (Windows)
 
-```bash
-source ~/.bashrc
-```
+Core features work: `autopsy`, `ghostsave`, `context`, `drift`.
 
-## What the Installer Does
+Limited: `showme` and `broadcast` require Linux-specific tools.
 
-1. Detects Bash or Zsh from `$SHELL`.
-2. Backs up the shell config to `~/.bashrc.unishell.backup` or `~/.zshrc.unishell.backup`.
-3. Copies the repository to `~/.unishell`.
-4. Adds `~/.unishell/bin` to `PATH`.
-5. Automatically tries to install optional `fzf` and `zoxide` tools when missing.
-6. Sources `~/.unishell/core/loader.sh`.
-7. Creates the default `~/workspace` folders.
-
-## Optional Tools
-
-Rerun optional tool setup later with:
-
-```bash
-unishell tools install
-```
-
-Check them with:
-
-```bash
-unishell tools status
-```
-
-UniShell loads `fzf` shell integration and `zoxide init` automatically when those tools are installed and the shell is interactive. If they are missing, UniShell shows warnings in `doctor` but the rest of the toolkit keeps working.
-
-## Reinstall
-
-Run `./install.sh` again. If `~/.unishell` exists, the installer asks before replacing it and backs up the existing installation first.
+For full support, use WSL2 instead of Git Bash.
 
 ## Uninstall
 
@@ -113,4 +87,4 @@ Run `./install.sh` again. If `~/.unishell` exists, the installer asks before rep
 ~/.unishell/uninstall.sh
 ```
 
-The uninstaller removes UniShell files and shell config lines. It never deletes `~/workspace`.
+This removes `~/.unishell` and the UniShell block from your shell config. Your project data is never touched.

@@ -1,28 +1,60 @@
 # Contributing to UniShell
 
-Thanks for helping improve UniShell.
+Thank you for your interest in contributing to UniShell!
 
-## Local Setup
+## Project Structure
 
-```bash
-git clone https://github.com/dineTH2003-dev/uni-terminal.git
-cd uni-terminal
-bash tests/test-install.sh
+```
+uni-terminal/
+├── bin/unishell              CLI entry point
+├── core/
+│   ├── config.sh             Configuration, helpers, lazy-loader engine
+│   ├── loader.sh             Module registration and PROMPT_COMMAND hooks
+│   └── platform.sh           Cross-platform detection (linux/wsl/macos/gitbash)
+├── commands/
+│   ├── autopsy.sh            Error post-mortem engine
+│   ├── drift.sh              Environment drift detector
+│   ├── ghostsave.sh          Shadow commit system
+│   ├── context.sh            Per-project command memory
+│   ├── broadcast.sh          LAN terminal streaming
+│   └── showme.sh             GUI transparency engine
+├── autopsy/
+│   └── patterns.tsv          Error pattern database
+├── showme/translations/
+│   ├── fs.tsv                Filesystem event → command translations
+│   └── dbus.tsv              D-Bus event → command translations
+├── docs/
+│   ├── installation.md
+│   └── commands.md
+├── install.sh
+├── uninstall.sh
+└── README.md
 ```
 
-## Adding a Command
+## How to Add a New Error Pattern
 
-1. Add the function to the most relevant file in `commands/`.
-2. Keep command names short and memorable.
-3. Validate required arguments before doing work.
-4. Use the shared output helpers from `core/config.sh`: `ok`, `warn`, `info`, and `err`.
-5. Update `README.md` and `docs/commands.md`.
-6. Add smoke coverage to `tests/test-install.sh` when practical.
+Edit `autopsy/patterns.tsv` and add a line:
 
-## Rules
+```
+EXIT_CODE	STDERR_REGEX	FIX_COMMAND	EXPLANATION
+```
 
-- Keep UniShell pure Bash.
-- Do not add required runtime dependencies.
-- Do not delete or overwrite user data without confirmation.
-- Prefer clear output over clever output.
-- Make commands safe to run more than once when possible.
+## How to Add a New D-Bus Translation
+
+Edit `showme/translations/dbus.tsv` and add a line:
+
+```
+DBUS_INTERFACE	DBUS_MEMBER	BUS	COMMAND_TEMPLATE	DESCRIPTION
+```
+
+## Guidelines
+
+- All code must be pure Bash (no Python, no Node.js, no compiled binaries)
+- All features must work offline with zero internet dependency
+- Use `${UNISHELL_TMPDIR:-/tmp}` instead of hardcoded `/dev/shm`
+- Run `bash -n <file>` to syntax-check before committing
+- Follow Conventional Commits for commit messages
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the MIT License.

@@ -39,9 +39,9 @@ main() {
   fi
 
   clean_shell_config "$HOME/.bashrc"
+  clean_shell_config "$HOME/.bash_profile"
   clean_shell_config "$HOME/.zshrc"
 
-  info "Workspace data was not deleted: $HOME/workspace"
   info "Backups remain at ~/.bashrc.unishell.backup and ~/.zshrc.unishell.backup when present"
   ok "UniShell removed"
 }

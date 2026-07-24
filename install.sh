@@ -15,16 +15,11 @@ warn() { printf "%b\n" "${YELLOW}[WARN]${NC} $1"; }
 info() { printf "%b\n" "${BLUE}[INFO]${NC} $1"; }
 err() { printf "%b\n" "${RED}[ERR]${NC}  $1" >&2; }
 
-INSTALL_OPTIONAL_TOOLS="yes"
-
 usage() {
   cat <<'EOF'
 Usage: ./install.sh [options]
 
 Options:
-  --with-tools              Install missing optional tools: fzf and zoxide (default)
-  --install-optional-tools  Same as --with-tools
-  --no-optional-tools       Skip optional tool installation
   -h, --help                Show this help
 EOF
 }
@@ -32,12 +27,6 @@ EOF
 parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      --with-tools|--install-optional-tools)
-        INSTALL_OPTIONAL_TOOLS="yes"
-        ;;
-      --no-optional-tools)
-        INSTALL_OPTIONAL_TOOLS="no"
-        ;;
       -h|--help)
         usage
         exit 0
@@ -52,11 +41,25 @@ parse_args() {
   done
 }
 
+detect_platform() {
+  case "$(uname -s 2>/dev/null)" in
+    Linux*)
+      if [ -f /proc/version ] && grep -qi 'microsoft\|wsl' /proc/version 2>/dev/null; then
+        printf "wsl"
+      else
+        printf "linux"
+      fi
+      ;;
+    Darwin*) printf "macos" ;;
+    MINGW*|MSYS*|CYGWIN*) printf "gitbash" ;;
+    *) printf "unknown" ;;
+  esac
+}
+
 detect_shell_config() {
   local shell_name
   shell_name="$(basename "${SHELL:-bash}")"
 
-  # On Git Bash (MSYS2/MinGW), bash reads .bash_profile, not .bashrc.
   local platform
   platform="$(detect_platform)"
 
@@ -76,26 +79,11 @@ detect_shell_config() {
   esac
 }
 
-detect_platform() {
-  case "$(uname -s 2>/dev/null)" in
-    Linux*)
-      if [ -f /proc/version ] && grep -qi 'microsoft\|wsl' /proc/version 2>/dev/null; then
-        printf "wsl"
-      else
-        printf "linux"
-      fi
-      ;;
-    Darwin*) printf "macos" ;;
-    MINGW*|MSYS*|CYGWIN*) printf "gitbash" ;;
-    *) printf "unknown" ;;
-  esac
-}
-
 copy_installation() {
   mkdir -p "$TARGET_DIR"
 
   local item
-  for item in bin core commands integrations templates docs tests autopsy showme README.md LICENSE CONTRIBUTING.md install.sh uninstall.sh; do
+  for item in bin core commands autopsy showme README.md LICENSE install.sh uninstall.sh; do
     if [ -e "$REPO_ROOT/$item" ]; then
       cp -R "$REPO_ROOT/$item" "$TARGET_DIR/"
     fi
@@ -115,57 +103,6 @@ backup_shell_config() {
     cp "$shell_config" "$backup_file"
     ok "Backed up shell config to $backup_file"
   fi
-}
-
-missing_optional_tools() {
-  local tool
-  for tool in fzf zoxide; do
-    if ! command -v "$tool" >/dev/null 2>&1; then
-      printf "%s\n" "$tool"
-    fi
-  done
-}
-
-maybe_install_optional_tools() {
-  local missing=()
-  local tool
-  while IFS= read -r tool; do
-    [ -n "$tool" ] && missing+=("$tool")
-  done < <(missing_optional_tools)
-
-  if [ "${#missing[@]}" -eq 0 ]; then
-    ok "Optional tools already installed: fzf zoxide"
-    return 0
-  fi
-
-  case "$INSTALL_OPTIONAL_TOOLS" in
-    yes)
-      "$TARGET_DIR/bin/unishell" tools install "${missing[@]}" || warn "Optional tool installation did not complete"
-      ;;
-    no)
-      warn "Optional tools missing: ${missing[*]}"
-      info "Install later with: unishell tools install"
-      ;;
-    prompt)
-      if [ -t 0 ]; then
-        warn "Optional tools missing: ${missing[*]}"
-        printf "Install optional UniShell tools now? (y/N): "
-        local confirm="n"
-        read -r confirm
-        case "$confirm" in
-          y|Y|yes|YES)
-            "$TARGET_DIR/bin/unishell" tools install "${missing[@]}" || warn "Optional tool installation did not complete"
-            ;;
-          *)
-            info "Install later with: unishell tools install"
-            ;;
-        esac
-      else
-        warn "Optional tools missing: ${missing[*]}"
-        info "Install later with: unishell tools install"
-      fi
-      ;;
-  esac
 }
 
 ensure_shell_config() {
@@ -191,7 +128,7 @@ EOF
 main() {
   parse_args "$@"
 
-  info "Installing UniShell"
+  info "Installing UniShell — Developer Intelligence Toolkit"
 
   local shell_config
   shell_config="$(detect_shell_config)"
@@ -233,19 +170,10 @@ main() {
     warn "Skipped file copy"
   fi
 
-  chmod +x "$TARGET_DIR/bin/unishell" "$TARGET_DIR/install.sh" "$TARGET_DIR/uninstall.sh" "$TARGET_DIR/tests/test-install.sh" 2>/dev/null || true
+  chmod +x "$TARGET_DIR/bin/unishell" "$TARGET_DIR/install.sh" "$TARGET_DIR/uninstall.sh" 2>/dev/null || true
   ok "Set executable permissions"
 
-  if [ "$should_copy" = "yes" ]; then
-    maybe_install_optional_tools
-  else
-    warn "Skipped optional tool setup because UniShell files were not refreshed"
-    info "Run ./install.sh again and allow refresh, or install tools manually"
-  fi
-
   ensure_shell_config "$shell_config"
-
-  "$TARGET_DIR/bin/unishell" init
 
   ok "UniShell installed"
 
@@ -261,13 +189,13 @@ main() {
     gitbash)
       printf "\n"
       warn "Running in Git Bash — core features available."
-      info "Limited: showme, ports, killport, service-check are not available."
+      info "Limited: showme, broadcast are not available on Git Bash."
       info "For full support, use WSL2: wsl --install (in PowerShell as Admin)"
       ;;
     macos)
       printf "\n"
       ok "Running on macOS — near-full UniShell support."
-      info "Install Homebrew tools for best experience: brew install fzf zoxide fswatch"
+      info "For showme: brew install fswatch"
       ;;
     linux)
       ok "Running on Linux — full UniShell support."
@@ -276,7 +204,7 @@ main() {
 
   printf "\n"
   info "Reload your shell with: source $shell_config"
-  info "Then run: unishell doctor"
+  info "Then run: unishell help"
 }
 
 main "$@"

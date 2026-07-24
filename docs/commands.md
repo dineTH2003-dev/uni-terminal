@@ -1,110 +1,149 @@
 # Commands
 
-## CLI
+UniShell provides 6 developer intelligence commands. All commands are lazy-loaded — they consume zero memory until first use.
+
+## `showme` — GUI Transparency Engine
+
+Shows the real Linux commands behind every desktop GUI action in real time.
 
 ```bash
-unishell init
-unishell doctor
-unishell tools status
-unishell tools install
-unishell off
-unishell help
-unishell version
+showme              # Open a new terminal window with live monitoring
+showme --inline     # Stream to the current terminal
+showme stop         # Stop all monitoring sessions
+showme status       # Check if showme is running
+showme help         # Show usage
 ```
 
-`unishell tools status` checks the optional `fzf` and `zoxide` engines. `unishell tools install` installs missing optional tools through a supported package manager when possible.
+### Monitoring Layers
 
-`unishell off` disables UniShell only in the current shell session. It removes UniShell aliases, functions, and `~/.unishell/bin` from `PATH`. Load it again with `source ~/.zshrc` or `source ~/.bashrc`.
+| Layer | Tool | What It Catches |
+| --- | --- | --- |
+| Filesystem | `inotifywait` | File create, delete, rename, move, permission changes |
+| D-Bus | `dbus-monitor` | Network, USB, Bluetooth, display, volume changes |
+| Journal | `journalctl` | Package installs/removes, service starts/stops |
 
-## Workspace Aliases
+### Requirements
+
+- `inotify-tools` (Linux) or `fswatch` (macOS)
+- `dbus-monitor` (pre-installed on GNOME/KDE)
+- `journalctl` (pre-installed on systemd distros)
+
+---
+
+## `autopsy` — Intelligent Error Post-Mortem
+
+Intercepts failed commands and explains the error with a suggested fix.
 
 ```bash
-ws       # cd ~/workspace
-uni      # cd ~/workspace/university
-proj     # cd ~/workspace/projects
-devops   # cd ~/workspace/devops
-learn    # cd ~/workspace/learning
-scripts  # cd ~/workspace/scripts
+autopsy on          # Enable error interception for this session
+autopsy off         # Disable error interception
+autopsy status      # Check if autopsy is active
+autopsy learn CMD FIX EXPLAIN  # Teach a new error pattern
 ```
 
-## Fuzzy Navigation
+### How It Works
+
+1. Hooks into Bash's `ERR` and `DEBUG` traps
+2. Captures stderr output to a temp file
+3. Matches exit code + stderr against `autopsy/patterns.tsv`
+4. Displays cause, fix command, and explanation
+5. Offers to execute the fix interactively
+
+### Custom Patterns
+
+Add your own patterns to `~/.unishell/autopsy/patterns.tsv`:
+
+```
+EXIT_CODE<TAB>STDERR_REGEX<TAB>FIX_COMMAND<TAB>EXPLANATION
+```
+
+---
+
+## `ghostsave` — Invisible Shadow Commits
+
+Creates hidden Git snapshots automatically, outside of your normal git history.
 
 ```bash
-openproj          # choose a workspace/project folder with fzf
-openproj ~/code   # choose a folder under a custom base directory
-cdf               # choose a directory below the current directory
-editfile          # choose a file and open it in $EDITOR
-j api             # smart zoxide jump when zoxide is installed
-ji                # interactive zoxide jump
-jump api          # UniShell wrapper around j
+ghostsave enable    # Start auto-saving (15-minute intervals)
+ghostsave disable   # Stop auto-saving
+ghostsave status    # Check if enabled and last save time
+ghostsave restore   # Browse and restore a hidden snapshot
+ghostsave squash "message"  # Collapse all ghosts into one real commit
+ghostsave purge     # Delete all ghost history for current branch
 ```
 
-`openproj`, `cdf`, and `editfile` require `fzf`. `j`, `ji`, and `jump` require `zoxide`. Install both with:
+### How It Works
+
+- Uses a temp Git index (not your real one) to create commit trees
+- Stores commits under `refs/ghosts/<branch>` — invisible to `git log` and `git push`
+- 15-minute throttle prevents excessive I/O
+- `ghostsave restore` stashes current work safely before restoring
+
+---
+
+## `context` — Per-Project Command Memory
+
+Logs every command per project directory with automatic recall on entry.
 
 ```bash
-unishell tools install
+context replay         # Re-run saved setup commands interactively
+context mark-setup N   # Tag the last N commands as project setup
+context search TERM    # Search command history for the current project
+context projects       # List all projects with saved history
 ```
 
-## Assignment Generator
+### How It Works
+
+- Appends every command with timestamp to `~/.unishell/context/<project>.log`
+- On first `cd` into a project each session, shows "last active" date and recent commands
+- Secrets matching `password=`, `token=`, `secret=`, `key=` are automatically redacted
+- Setup commands can be replayed interactively with `y/n/q` controls
+
+---
+
+## `drift` — Environment Drift Detector
+
+Detects when tool versions or dependencies change between project sessions.
 
 ```bash
-mkassign dbms-lab-01
+drift snapshot      # Save current environment state
+drift diff          # Show what changed since last snapshot
+drift reset         # Update the baseline to current state
+drift list          # List all projects with saved snapshots
 ```
 
-Creates:
+### What It Tracks
 
-```text
-~/workspace/university/dbms-lab-01/
-|-- questions/
-|-- answers/
-|-- screenshots/
-|-- references/
-|-- submissions/
-`-- README.md
-```
+- Tool versions (node, python, go, rust, java, etc.)
+- Dependency file checksums (package.json, requirements.txt, Cargo.toml, etc.)
+- `.env` key names (not values — never stores secrets)
+- PATH fingerprint
 
-## Project Generator
+### How It Works
+
+- Saves snapshots to `~/.unishell/drifts/<project>.snap`
+- PROMPT_COMMAND hook fires only on directory change (one string comparison when idle)
+- Checksums computed in pure `awk` — no external hash tool dependency
+
+---
+
+## `broadcast` — LAN Terminal Streaming
+
+Streams terminal output to any browser on your local network.
 
 ```bash
-mkproject my-app --basic
-mkproject api-demo --python
-mkproject web-demo --node
+broadcast start     # Start streaming (prints URL to share)
+broadcast stop      # Stop the stream and clean up
 ```
 
-All projects are created under `~/workspace/projects`.
+### How It Works
 
-## Project Onboarding
+- Uses `script` to capture terminal output to a RAM-backed FIFO
+- A pure-Bash HTTP server (using `nc`) serves an HTML page with Server-Sent Events
+- Inline `awk` converts ANSI terminal colors to HTML in real time
+- Strictly read-only — the HTTP server never writes to your TTY
 
-```bash
-onboard git@github.com:user/project.git
-```
+### Requirements
 
-Automates setting up a newly cloned project. Detects the project type (Node.js, Python, Rust, Go) and automatically creates virtual environments, installs dependencies, copies `.env` files, runs database migrations, and handles Docker Compose services. Guides the user interactively through the setup process.
-
-
-## Git Helpers
-
-```bash
-gstatus
-gsave "initial commit"
-gpush
-glog
-gnew feature/login
-gundo
-```
-
-`gundo` asks for confirmation before running `git reset --soft HEAD~1`.
-
-## System Helpers
-
-```bash
-sysinfo
-ports
-myip
-diskcheck
-memcheck
-service-check nginx
-docker-clean
-```
-
-`myip` prints a warning if the public IP endpoint cannot be reached.
+- `script` (part of `util-linux`, pre-installed)
+- `nc` (netcat, pre-installed on most distros)
