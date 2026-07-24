@@ -1,6 +1,6 @@
 # Commands
 
-UniShell provides 6 developer intelligence commands. All commands are lazy-loaded — they consume zero memory until first use.
+UniShell provides 6 developer intelligence commands. `autopsy` loads at shell startup so failed-command interception is active immediately; the other commands are lazy-loaded on first use.
 
 ## `showme` — GUI Transparency Engine
 
@@ -43,7 +43,7 @@ autopsy learn CMD FIX EXPLAIN  # Teach a new error pattern
 
 ### How It Works
 
-1. Hooks into Bash's `ERR` and `DEBUG` traps
+1. Hooks into Bash's `ERR` / `DEBUG` traps or Zsh's `TRAPERR` / `preexec` hooks
 2. Captures stderr output to a temp file
 3. Matches exit code + stderr against `autopsy/patterns.tsv`
 4. Displays cause, fix command, and explanation

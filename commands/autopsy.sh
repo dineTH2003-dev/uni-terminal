@@ -6,9 +6,10 @@
 # optionally run the fix. Zero internet. Zero daemon. Works offline forever.
 
 _AUTOPSY_PATTERNS="$UNISHELL_HOME/autopsy/patterns.tsv"
-_AUTOPSY_STDERR="${UNISHELL_TMPDIR:-/tmp}/unishell_stderr_$$"
-_AUTOPSY_LAST_CMD=""
-_AUTOPSY_LAST_EXIT=0
+: "${_AUTOPSY_STDERR:=${UNISHELL_TMPDIR:-/tmp}/unishell_stderr_$$}"
+: "${_AUTOPSY_LAST_CMD:=}"
+: "${_AUTOPSY_LAST_EXIT:=0}"
+: "${_AUTOPSY_STDERR_CAPTURED:=0}"
 
 # ── Trap hooks ───────────────────────────────────────────────────────────────
 
@@ -23,25 +24,59 @@ _unishell_autopsy_debug() {
   case "$cmd" in
     _unishell_*|unishell_*|ok\ *|warn\ *|info\ *|err\ *) return ;;
     "") return ;;
-    *) _AUTOPSY_LAST_CMD="$cmd" ;;
+    *)
+      _AUTOPSY_LAST_CMD="$cmd"
+      if [ -n "${ZSH_VERSION:-}" ]; then
+        : >"$_AUTOPSY_STDERR" 2>/dev/null || true
+      fi
+      ;;
   esac
 }
 
 # Called by ERR trap (Bash) or TRAPERR (Zsh) after any command exits non-zero.
 _unishell_autopsy_hook() {
-  local exit_code=$?
+  local exit_code="${1:-$?}"
   _AUTOPSY_LAST_EXIT=$exit_code
 
   # Only fire if autopsy is enabled and a real command failed.
-  [ "${UNISHELL_AUTOPSY_ENABLED:-1}" = "1" ] || return
-  [ -n "$_AUTOPSY_LAST_CMD" ] || return
-  [ "$exit_code" -eq 0 ] && return
+  [ "${UNISHELL_AUTOPSY_ENABLED:-1}" = "1" ] || return 0
+  [ -n "$_AUTOPSY_LAST_CMD" ] || return 0
+  [ "$exit_code" -eq 0 ] && return 0
 
   local stderr_content=""
   [ -f "$_AUTOPSY_STDERR" ] && stderr_content="$(cat "$_AUTOPSY_STDERR" 2>/dev/null)"
 
   _unishell_autopsy_match "$_AUTOPSY_LAST_CMD" "$exit_code" "$stderr_content"
   : >"$_AUTOPSY_STDERR" 2>/dev/null || true  # clear for next command
+}
+
+_unishell_autopsy_enable_hooks() {
+  UNISHELL_AUTOPSY_ENABLED=1
+
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    autoload -Uz add-zsh-hook 2>/dev/null || true
+    add-zsh-hook preexec _unishell_autopsy_debug 2>/dev/null || true
+    eval 'function TRAPERR() { _unishell_autopsy_hook "$?"; }'
+  else
+    trap '_unishell_autopsy_hook "$?"' ERR
+    trap '_unishell_autopsy_debug' DEBUG
+  fi
+
+  if [ "${_AUTOPSY_STDERR_CAPTURED:-0}" != "1" ]; then
+    exec 2> >(tee "$_AUTOPSY_STDERR" >&2)
+    _AUTOPSY_STDERR_CAPTURED=1
+  fi
+}
+
+_unishell_autopsy_disable_hooks() {
+  UNISHELL_AUTOPSY_ENABLED=0
+
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    add-zsh-hook -d preexec _unishell_autopsy_debug 2>/dev/null || true
+    eval 'function TRAPERR() { :; }'
+  else
+    trap - ERR DEBUG
+  fi
 }
 
 # ── Pattern matching engine ──────────────────────────────────────────────────
@@ -66,10 +101,10 @@ _unishell_autopsy_match() {
       continue
     fi
     # Check regex match against combined stderr+command string.
-    if echo "$combined" | grep -qE "$pattern_regex" 2>/dev/null; then
+    if printf '%s\n' "$combined" | grep -aqE "$pattern_regex" 2>/dev/null; then
       # Expand $1 back-reference from the regex capture group.
       local captured
-      captured="$(echo "$combined" | grep -oE "$pattern_regex" | head -1)"
+      captured="$(printf '%s\n' "$combined" | grep -aoE "$pattern_regex" 2>/dev/null | head -1)"
       matched_cause="$cause"
       matched_fix="$(echo "$fix" | sed "s|\$1|$captured|g")"
       matched_learn="$learn"
@@ -113,31 +148,11 @@ autopsy() {
 
   case "$subcmd" in
     on|enable)
-      UNISHELL_AUTOPSY_ENABLED=1
-      if [ -n "${ZSH_VERSION:-}" ]; then
-        # Zsh: use preexec + TRAPERR hooks
-        autoload -Uz add-zsh-hook 2>/dev/null || true
-        add-zsh-hook preexec _unishell_autopsy_debug 2>/dev/null || true
-        # Define TRAPERR as a Zsh trap function
-        eval 'function TRAPERR() { _unishell_autopsy_hook; }'
-      else
-        # Bash: use DEBUG + ERR traps
-        trap '_unishell_autopsy_hook' ERR
-        trap '_unishell_autopsy_debug' DEBUG
-      fi
-      # Redirect stderr through tee so we can capture it
-      exec 2> >(tee "$_AUTOPSY_STDERR" >&2)
+      _unishell_autopsy_enable_hooks
       ok "Autopsy enabled — failed commands will be analyzed automatically."
       ;;
     off|disable)
-      UNISHELL_AUTOPSY_ENABLED=0
-      if [ -n "${ZSH_VERSION:-}" ]; then
-        add-zsh-hook -d preexec _unishell_autopsy_debug 2>/dev/null || true
-        # Remove TRAPERR by redefining it as a no-op
-        eval 'function TRAPERR() { :; }'
-      else
-        trap - ERR DEBUG
-      fi
+      _unishell_autopsy_disable_hooks
       ok "Autopsy disabled."
       ;;
     status)
@@ -193,13 +208,5 @@ EOF
 
 # Auto-activate autopsy when this module first loads (unless explicitly disabled).
 if [ "${UNISHELL_AUTOPSY_ENABLED:-1}" = "1" ]; then
-  if [ -n "${ZSH_VERSION:-}" ]; then
-    autoload -Uz add-zsh-hook 2>/dev/null || true
-    add-zsh-hook preexec _unishell_autopsy_debug 2>/dev/null || true
-    eval 'function TRAPERR() { _unishell_autopsy_hook; }'
-  else
-    trap '_unishell_autopsy_hook' ERR
-    trap '_unishell_autopsy_debug' DEBUG
-  fi
-  exec 2> >(tee "$_AUTOPSY_STDERR" >&2)
+  _unishell_autopsy_enable_hooks
 fi

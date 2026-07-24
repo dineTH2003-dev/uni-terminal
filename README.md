@@ -129,10 +129,10 @@ source ~/.bashrc
 
 ## Architecture
 
-UniShell uses a **lazy-loading engine** — all 6 features are registered as lightweight shell stubs at boot. The real module code is only loaded into memory the first time you use a command. This means:
+UniShell keeps startup small with a hybrid loading model. `autopsy` is loaded at boot because failed-command interception must be active before your first command; the other command modules are registered as lightweight lazy stubs and load on first use. This means:
 
-- **Zero boot overhead** — UniShell adds < 5ms to your shell startup
-- **Zero daemons** — All background monitoring uses native shell hooks (`PROMPT_COMMAND`)
+- **Low boot overhead** — UniShell keeps startup work minimal
+- **Zero daemons** — All background monitoring uses native shell hooks (`PROMPT_COMMAND` / `precmd`)
 - **Zero internet** — Everything runs offline, all data stays in `~/.unishell/`
 - **Zero dependencies** — Uses standard POSIX tools (`awk`, `grep`, `sed`, `git`, `nc`)
 

@@ -84,13 +84,19 @@ unishell_session_off() {
 
   unalias uniexit 2>/dev/null || true
 
+  if command -v _unishell_autopsy_disable_hooks >/dev/null 2>&1; then
+    _unishell_autopsy_disable_hooks 2>/dev/null || true
+  fi
+
   local fn
   for fn in \
     unishell_help unishell_shell_name \
     unishell_shell_config _unishell_lazy \
     ok warn info err unishell_ask \
     unishell_confirm unishell_session_off unishell uniexit \
-    autopsy _unishell_autopsy_hook _unishell_autopsy_match \
+    autopsy TRAPERR _unishell_autopsy_debug _unishell_autopsy_hook \
+    _unishell_autopsy_enable_hooks _unishell_autopsy_disable_hooks \
+    _unishell_autopsy_match \
     drift _unishell_drift_hook \
     ghostsave _unishell_ghost_tick \
     context _unishell_context_hook \

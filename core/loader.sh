@@ -30,8 +30,11 @@ _unishell_source_file() {
 _unishell_source_file "$UNISHELL_HOME/core/config.sh"
 _unishell_source_file "$UNISHELL_HOME/core/platform.sh"
 
-# ── Lazy-load all command modules (zero RAM cost until first use) ─────────────
-_unishell_lazy autopsy    autopsy
+# ── Load command modules ─────────────────────────────────────────────────────
+# Autopsy intercepts failed commands, so it must be active before the first prompt.
+_unishell_source_file "$UNISHELL_HOME/commands/autopsy.sh"
+
+# Lazy-load user-invoked modules so startup stays small.
 _unishell_lazy drift      drift
 _unishell_lazy ghostsave  ghostsave
 _unishell_lazy context    context
