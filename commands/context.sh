@@ -83,7 +83,7 @@ _unishell_context_hook() {
 
 context() {
   local subcmd="${1:-log}"
-  shift || true
+  [ $# -gt 0 ] && shift
 
   local log; log="$(_context_log_path)"
   local setup; setup="$(_context_setup_path)"

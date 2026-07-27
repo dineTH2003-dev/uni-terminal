@@ -239,7 +239,7 @@ _unishell_broadcast_server() {
 
 broadcast() {
   local subcmd="${1:-start}"
-  shift || true
+  [ $# -gt 0 ] && shift
 
   case "$subcmd" in
     start)

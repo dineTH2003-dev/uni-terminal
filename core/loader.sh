@@ -33,6 +33,8 @@ _unishell_source_file "$UNISHELL_HOME/core/platform.sh"
 # ── Load command modules ─────────────────────────────────────────────────────
 # Autopsy intercepts failed commands, so it must be active before the first prompt.
 _unishell_source_file "$UNISHELL_HOME/commands/autopsy.sh"
+# Ensure exit-code save variable exists before the first prompt.
+: "${_AUTOPSY_SAVED_EXIT:=0}"
 
 # Lazy-load user-invoked modules so startup stays small.
 _unishell_lazy drift      drift

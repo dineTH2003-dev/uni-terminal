@@ -144,7 +144,7 @@ _unishell_drift_hook() {
 
 drift() {
   local subcmd="${1:-check}"
-  shift || true
+  [ $# -gt 0 ] && shift
 
   local snap
   snap="$(_drift_snap_path)"

@@ -1,111 +1,116 @@
 #!/usr/bin/env bash
 # autopsy.sh — Intelligent shell error post-mortem engine.
 #
-# Hooks into shell's DEBUG/ERR traps to capture failing commands and stderr,
-# then pattern-matches against a local knowledge base to explain the error and
-# optionally run the fix. Zero internet. Zero daemon. Works offline forever.
+# Hooks into shell traps to capture failing commands and their stderr,
+# then pattern-matches against a local knowledge base to explain the error
+# and optionally run the fix. Zero internet. Zero daemon. Works offline.
 #
-# PERFORMANCE NOTE:
-#   Previous versions used `exec 2> >(tee "$file" >&2)` to capture stderr
-#   globally.  This piped ALL stderr (including prompt redraws and tab-
-#   completion) through an extra process, causing 10-50ms typing latency.
-#   The current implementation captures stderr ONLY around failing commands
-#   by temporarily redirecting fd 2 and restoring it immediately after.
+# ── Zsh + Oh-My-Zsh / Powerlevel10k Architecture Note ────────────────────────
+# In Zsh with p9k/omz, $? is reset to 0 by p9k's git-polling hooks before
+# our precmd hook runs.  The ONLY reliable solution is Zsh's TRAPERR function
+# (alias: TRAPZERR), which fires IMMEDIATELY after any interactive command
+# exits non-zero — before any precmd hook.  We save the real exit code there
+# and read it back from precmd, completely bypassing the p9k ordering issue.
+#
+# Bash uses the ERR + DEBUG trap pair — still the most reliable approach there.
 
 _AUTOPSY_PATTERNS="$UNISHELL_HOME/autopsy/patterns.tsv"
 _AUTOPSY_LAST_CMD=""
 _AUTOPSY_LAST_EXIT=0
+_AUTOPSY_SAVED_EXIT=0        # Written by TRAPERR; read by precmd hook.
+_AUTOPSY_STDERR_REDIRECTED=0
 
-# Create a private temp file for stderr capture (readable only by owner).
+# ── Temp-file initialisation ─────────────────────────────────────────────────
+
 _autopsy_init_stderr_file() {
   local dir="${UNISHELL_TMPDIR:-/tmp}"
   if command -v mktemp >/dev/null 2>&1; then
     _AUTOPSY_STDERR="$(mktemp "${dir}/unishell_stderr_XXXXXX")"
   else
     _AUTOPSY_STDERR="${dir}/unishell_stderr_$$"
-    (umask 077; : >"$_AUTOPSY_STDERR")
+    ( umask 077; : >"$_AUTOPSY_STDERR" )
   fi
-  # Ensure only the owner can read/write.
   chmod 600 "$_AUTOPSY_STDERR" 2>/dev/null || true
 }
 
-# ── Trap hooks ───────────────────────────────────────────────────────────────
+# ── Shared hooks ─────────────────────────────────────────────────────────────
 
-# Called before every command: records what's about to run.
-# In Bash this is invoked via the DEBUG trap.
-# In Zsh this is invoked via the preexec hook (registered below).
+# Fires before every interactive command (preexec in Zsh, DEBUG trap in Bash).
+# Records the command string so the report can show what failed.
 _unishell_autopsy_debug() {
-  # In Zsh, preexec receives the command line as $1.
-  # In Bash, BASH_COMMAND holds the current command.
   local cmd="${1:-${BASH_COMMAND:-}}"
-  # Avoid recording internal UniShell functions or empty commands.
   case "$cmd" in
-    _unishell_*|unishell_*|ok\ *|warn\ *|info\ *|err\ *|autopsy\ *) return ;;
-    "") return ;;
-    *) _AUTOPSY_LAST_CMD="$cmd" ;;
+    _unishell_*|unishell_*|autopsy*|ok\ *|warn\ *|info\ *|err\ *|"") return ;;
   esac
+  _AUTOPSY_LAST_CMD="$cmd"
 }
 
-# Called by ERR trap (Bash) or precmd (Zsh) after a command finishes.
-# Checks whether the last command failed and, if so, runs pattern matching.
+# Runs the pattern-match + display logic.
 _unishell_autopsy_hook() {
-  local exit_code="${1:-$?}"
+  local exit_code="${1:-1}"
   _AUTOPSY_LAST_EXIT=$exit_code
 
-  # Only fire if autopsy is enabled and a real command failed.
   [ "${UNISHELL_AUTOPSY_ENABLED:-0}" = "1" ] || return 0
-  [ -n "$_AUTOPSY_LAST_CMD" ] || return 0
-  [ "$exit_code" -eq 0 ] && return 0
+  [ -n "$_AUTOPSY_LAST_CMD" ]               || return 0
+  [ "$exit_code" -ne 0 ]                    || return 0
 
-  # Read captured stderr (if any).
   local stderr_content=""
-  if [ -f "$_AUTOPSY_STDERR" ] && [ -s "$_AUTOPSY_STDERR" ]; then
+  if [ -f "${_AUTOPSY_STDERR:-}" ] && [ -s "$_AUTOPSY_STDERR" ]; then
     stderr_content="$(cat "$_AUTOPSY_STDERR" 2>/dev/null)"
+    : >"$_AUTOPSY_STDERR" 2>/dev/null || true
   fi
 
   _unishell_autopsy_match "$_AUTOPSY_LAST_CMD" "$exit_code" "$stderr_content"
-
-  # Clear for next command.
-  : >"$_AUTOPSY_STDERR" 2>/dev/null || true
+  _AUTOPSY_LAST_CMD=""   # consume — avoid repeating on next prompt
 }
 
-# ── Zsh-specific hooks ──────────────────────────────────────────────────────
-# In Zsh we use precmd (runs after each command) to check the exit code,
-# and preexec (runs before each command) to record the command string.
-# We do NOT use exec 2> redirection — instead we rely on Zsh's built-in
-# ability to capture the last command's stderr via TRAPERR or precmd + $?.
+# ── Zsh hooks ─────────────────────────────────────────────────────────────────
 
-_autopsy_zsh_precmd() {
-  local exit_code=$?
-  # Only process if autopsy is enabled and the exit code is non-zero.
-  if [ "${UNISHELL_AUTOPSY_ENABLED:-0}" = "1" ] && [ "$exit_code" -ne 0 ]; then
-    _unishell_autopsy_hook "$exit_code"
+# TRAPERR (= TRAPZERR) fires in Zsh immediately when any interactive command
+# exits with a non-zero status — crucially, BEFORE any precmd hook runs.
+# We only save the exit code here; analysis happens in _autopsy_zsh_precmd
+# once the tee process has had a chance to flush stderr to the capture file.
+_autopsy_define_trapzerr() {
+  # Define using eval so that 'function TRAPERR' is a proper Zsh function.
+  eval '
+function TRAPERR() {
+  # Only save when autopsy is on and a real command was recorded.
+  if [ "${UNISHELL_AUTOPSY_ENABLED:-0}" = "1" ] && [ -n "$_AUTOPSY_LAST_CMD" ]; then
+    _AUTOPSY_SAVED_EXIT=$?
   fi
 }
+'
+}
 
-# ── Hook registration ────────────────────────────────────────────────────────
+# Runs after every command (appended to precmd_functions).
+# Reads _AUTOPSY_SAVED_EXIT — NOT $? — so p9k ordering cannot corrupt it.
+_autopsy_zsh_precmd() {
+  local exit_code="${_AUTOPSY_SAVED_EXIT:-0}"
+  _AUTOPSY_SAVED_EXIT=0   # reset for next command
+  [ "$exit_code" -ne 0 ] && _unishell_autopsy_hook "$exit_code"
+}
+
+# ── Hook enable / disable ─────────────────────────────────────────────────────
 
 _unishell_autopsy_enable_hooks() {
   UNISHELL_AUTOPSY_ENABLED=1
-
-  # Ensure stderr file exists.
   [ -f "${_AUTOPSY_STDERR:-}" ] || _autopsy_init_stderr_file
 
   if [ -n "${ZSH_VERSION:-}" ]; then
     autoload -Uz add-zsh-hook 2>/dev/null || true
+    # preexec: capture command string before it runs.
     add-zsh-hook preexec _unishell_autopsy_debug 2>/dev/null || true
+    # TRAPERR: save exit code immediately on failure (before p9k resets $?).
+    _autopsy_define_trapzerr
+    # precmd: read saved exit code and run analysis.
     add-zsh-hook precmd _autopsy_zsh_precmd 2>/dev/null || true
-    # Redirect stderr through tee ONLY for Zsh (needed to capture stderr
-    # since Zsh doesn't expose per-command stderr any other way).
-    # Use a guard to avoid stacking multiple tee redirections.
+    # Stderr capture via tee — guarded so we never stack two redirections.
     if [ "${_AUTOPSY_STDERR_REDIRECTED:-0}" != "1" ]; then
       exec 2> >(tee "$_AUTOPSY_STDERR" >&2)
       _AUTOPSY_STDERR_REDIRECTED=1
     fi
   else
-    # Bash: use DEBUG + ERR traps.
-    # For Bash we also need the tee redirect since there's no other way
-    # to capture stderr from an already-executed command.
+    # Bash: DEBUG trap captures command string; ERR trap fires on failure.
     trap '_unishell_autopsy_debug' DEBUG
     trap '_unishell_autopsy_hook "$?"' ERR
     if [ "${_AUTOPSY_STDERR_REDIRECTED:-0}" != "1" ]; then
@@ -120,49 +125,42 @@ _unishell_autopsy_disable_hooks() {
 
   if [ -n "${ZSH_VERSION:-}" ]; then
     add-zsh-hook -d preexec _unishell_autopsy_debug 2>/dev/null || true
-    add-zsh-hook -d precmd _autopsy_zsh_precmd 2>/dev/null || true
+    add-zsh-hook -d precmd  _autopsy_zsh_precmd     2>/dev/null || true
+    # Neutralise TRAPERR without undefining it (undefining causes Zsh warnings).
+    eval 'function TRAPERR() { :; }'
   else
     trap - ERR DEBUG
   fi
 
-  # Restore stderr to its original fd (undo the tee redirect).
+  # Restore stderr to the terminal.
   if [ "${_AUTOPSY_STDERR_REDIRECTED:-0}" = "1" ]; then
-    exec 2>&1  # reset stderr to stdout's fd (terminal)
-    # On most systems, re-opening /dev/tty is more correct:
     if [ -e /dev/tty ]; then
       exec 2>/dev/tty
+    else
+      exec 2>&1
     fi
     _AUTOPSY_STDERR_REDIRECTED=0
   fi
 
-  # Clean up temp file.
   [ -f "${_AUTOPSY_STDERR:-}" ] && rm -f "$_AUTOPSY_STDERR" 2>/dev/null || true
 }
 
-# ── Pattern matching engine ──────────────────────────────────────────────────
+# ── Pattern matching engine ───────────────────────────────────────────────────
 
 _unishell_autopsy_match() {
-  local cmd="$1"
-  local exit_code="$2"
-  local stderr="$3"
+  local cmd="$1" exit_code="$2" stderr="$3"
   local combined="${stderr}${cmd}"
 
   [ -f "$_AUTOPSY_PATTERNS" ] || return
 
-  local matched_cause=""
-  local matched_fix=""
-  local matched_learn=""
+  local matched_cause="" matched_fix="" matched_learn=""
 
   while IFS=$'\t' read -r pattern_exit pattern_regex cause fix learn || [ -n "$pattern_exit" ]; do
-    # Skip comments and blank lines.
     case "$pattern_exit" in "#"*|"") continue ;; esac
-    # Check exit code match (wildcard '*' matches any).
     if [ "$pattern_exit" != "*" ] && [ "$pattern_exit" != "$exit_code" ]; then
       continue
     fi
-    # Check regex match against combined stderr+command string.
     if printf '%s\n' "$combined" | grep -aqE "$pattern_regex" 2>/dev/null; then
-      # Expand $1 back-reference from the regex capture group.
       local captured
       captured="$(printf '%s\n' "$combined" | grep -aoE "$pattern_regex" 2>/dev/null | head -1)"
       matched_cause="$cause"
@@ -172,28 +170,23 @@ _unishell_autopsy_match() {
     fi
   done <"$_AUTOPSY_PATTERNS"
 
-  [ -z "$matched_cause" ] && return  # No pattern matched — stay silent.
+  [ -z "$matched_cause" ] && return
 
-  # ── Display the autopsy report ───────────────────────────────────────────
   printf "\n"
   printf "%b\n" "  ${RED}✖${NC}  ${BOLD}${_AUTOPSY_LAST_CMD}${NC}  exited ${YELLOW}${exit_code}${NC}"
   printf "\n"
   printf "%b\n" "  ${BLUE}🔎 Cause:${NC}   $matched_cause"
+
   if [ -n "$matched_fix" ] && [ "$matched_fix" != "-" ]; then
     printf "%b\n" "  ${GREEN}🔧 Fix:${NC}     ${BOLD}${matched_fix}${NC}"
-    if [ -n "$matched_learn" ]; then
-      printf "%b\n" "  ${CYAN}📚 Learn:${NC}   $matched_learn"
-    fi
+    [ -n "$matched_learn" ] && printf "%b\n" "  ${CYAN}📚 Learn:${NC}   $matched_learn"
     printf "\n"
     printf "%b" "  Run the fix? (y/N): "
-    local confirm
-    read -r confirm
+    local confirm; read -r confirm
     case "$confirm" in
       y|Y|yes|YES)
         printf "%b\n" "  ${GREEN}→${NC} ${matched_fix}"
-        # SEC-1 FIX: Run the fix command without eval.
-        # Using 'command' + direct execution avoids shell injection from
-        # specially crafted stderr output that ends up in $matched_fix.
+        # SEC-1: run fix in a subshell, not via eval, to prevent injection.
         ( $matched_fix )
         ;;
     esac
@@ -203,11 +196,11 @@ _unishell_autopsy_match() {
   printf "\n"
 }
 
-# ── User-facing command ──────────────────────────────────────────────────────
+# ── User-facing command ───────────────────────────────────────────────────────
 
 autopsy() {
   local subcmd="${1:-status}"
-  shift || true
+  [ $# -gt 0 ] && shift
 
   case "$subcmd" in
     on|enable)
@@ -226,26 +219,23 @@ autopsy() {
       fi
       info "Pattern database: $_AUTOPSY_PATTERNS"
       local count=0
-      [ -f "$_AUTOPSY_PATTERNS" ] && count=$(grep -cv '^#\|^$' "$_AUTOPSY_PATTERNS" 2>/dev/null || echo 0)
+      [ -f "$_AUTOPSY_PATTERNS" ] && \
+        count=$(grep -cv '^#\|^$' "$_AUTOPSY_PATTERNS" 2>/dev/null || echo 0)
       info "Patterns loaded: $count"
       ;;
     learn)
-      # autopsy learn "command-that-failed" "what fixed it" "explanation"
-      local learn_cmd="${1:-}"
-      local learn_fix="${2:-}"
-      local learn_why="${3:-}"
+      local learn_cmd="${1:-}" learn_fix="${2:-}" learn_why="${3:-}"
       if [ -z "$learn_cmd" ] || [ -z "$learn_fix" ]; then
         err "Usage: autopsy learn \"failed-command\" \"fix-command\" [\"explanation\"]"
         return 1
       fi
       local user_patterns="$UNISHELL_HOME/autopsy/user-patterns.tsv"
       mkdir -p "$(dirname "$user_patterns")"
-      # Simple literal pattern from the command fragment.
       local escaped
       escaped="$(printf '%s' "$learn_cmd" | sed 's/[.*+?^${}()|[\\]\\]/\\&/g')"
       printf "%s\t%s\t%s\t%s\t%s\n" \
-        "*" "$escaped" "User-defined pattern for: $learn_cmd" "$learn_fix" "$learn_why" \
-        >> "$user_patterns"
+        "*" "$escaped" "User-defined: $learn_cmd" "$learn_fix" "$learn_why" \
+        >>"$user_patterns"
       ok "Pattern saved to $user_patterns"
       ;;
     help|-h|--help)
@@ -258,8 +248,7 @@ autopsy — intelligent shell error post-mortem
   autopsy learn CMD FIX [EXPLAIN]
                       Teach autopsy a new fix pattern
 
-Autopsy activates automatically after UniShell loads.
-Set UNISHELL_AUTOPSY_ENABLED=0 before loading UniShell to start disabled.
+Autopsy is enabled automatically when UniShell loads.
 EOF
       ;;
     *)
@@ -269,7 +258,9 @@ EOF
   esac
 }
 
-# Auto-activate autopsy when this module first loads (unless explicitly disabled).
+# ── Auto-enable on load ───────────────────────────────────────────────────────
+# Fires when this file is first sourced by loader.sh.
+# UNISHELL_AUTOPSY_ENABLED=0 before sourcing loader.sh to suppress.
 if [ "${UNISHELL_AUTOPSY_ENABLED:-1}" != "0" ]; then
   _unishell_autopsy_enable_hooks
 fi

@@ -66,7 +66,7 @@ _ghost_list_commits() {
 
 ghostsave() {
   local subcmd="${1:-status}"
-  shift || true
+  [ $# -gt 0 ] && shift
 
   if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     err "Not inside a git repository."
