@@ -15,10 +15,10 @@
 # Bash uses the ERR + DEBUG trap pair — still the most reliable approach there.
 
 _AUTOPSY_PATTERNS="$UNISHELL_HOME/autopsy/patterns.tsv"
-_AUTOPSY_LAST_CMD=""
-_AUTOPSY_LAST_EXIT=0
-_AUTOPSY_SAVED_EXIT=0        # Written by TRAPERR; read by precmd hook.
-_AUTOPSY_STDERR_REDIRECTED=0
+: "${_AUTOPSY_LAST_CMD:=}"
+: "${_AUTOPSY_LAST_EXIT:=0}"
+: "${_AUTOPSY_SAVED_EXIT:=0}"        # Written by TRAPERR; read by precmd hook.
+: "${_AUTOPSY_STDERR_REDIRECTED:=0}"
 
 # ── Temp-file initialisation ─────────────────────────────────────────────────
 
