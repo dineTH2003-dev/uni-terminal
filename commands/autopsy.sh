@@ -71,12 +71,13 @@ _unishell_autopsy_hook() {
 # We only save the exit code here; analysis happens in _autopsy_zsh_precmd
 # once the tee process has had a chance to flush stderr to the capture file.
 _autopsy_define_trapzerr() {
-  # Define using eval so that 'function TRAPERR' is a proper Zsh function.
+  # Define using eval so that 'function TRAPZERR' is a proper Zsh function.
   eval '
-function TRAPERR() {
+function TRAPZERR() {
+  local err=$?
   # Only save when autopsy is on and a real command was recorded.
   if [ "${UNISHELL_AUTOPSY_ENABLED:-0}" = "1" ] && [ -n "$_AUTOPSY_LAST_CMD" ]; then
-    _AUTOPSY_SAVED_EXIT=$?
+    _AUTOPSY_SAVED_EXIT=$err
   fi
 }
 '
@@ -126,8 +127,8 @@ _unishell_autopsy_disable_hooks() {
   if [ -n "${ZSH_VERSION:-}" ]; then
     add-zsh-hook -d preexec _unishell_autopsy_debug 2>/dev/null || true
     add-zsh-hook -d precmd  _autopsy_zsh_precmd     2>/dev/null || true
-    # Neutralise TRAPERR without undefining it (undefining causes Zsh warnings).
-    eval 'function TRAPERR() { :; }'
+    # Neutralise TRAPZERR without undefining it (undefining causes Zsh warnings).
+    eval 'function TRAPZERR() { :; }'
   else
     trap - ERR DEBUG
   fi
