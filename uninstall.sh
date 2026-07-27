@@ -22,10 +22,15 @@ clean_shell_config() {
     return 0
   fi
 
+  # SEC-4 FIX: Create a safety backup before modifying the file.
+  local backup="${shell_config}.unishell.pre-uninstall.bak"
+  cp "$shell_config" "$backup" 2>/dev/null || true
+
   sed -i '/# >>> UniShell >>>/,/# <<< UniShell <<</d' "$shell_config"
   sed -i '/export PATH="\$HOME\/.unishell\/bin:\$PATH"/d' "$shell_config"
   sed -i '/source "\$HOME\/.unishell\/core\/loader.sh"/d' "$shell_config"
   ok "Removed UniShell lines from $shell_config"
+  info "Safety backup: $backup"
 }
 
 main() {

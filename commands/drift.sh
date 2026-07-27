@@ -80,10 +80,22 @@ _drift_read_snap() {
 
 # ── Passive PROMPT_COMMAND hook (replaces no-op stub from loader) ────────────
 
+# Cache TTL to avoid forking 6+ subshells on every directory change.
+# Default: only re-check drift every 60 seconds.
+_DRIFT_CHECK_INTERVAL="${UNISHELL_DRIFT_INTERVAL:-60}"
+_DRIFT_LAST_CHECK=0
+
 _unishell_drift_hook() {
   local snap
   snap="$(_drift_snap_path)"
   [ -f "$snap" ] || return  # Loader already checks this before calling.
+
+  # Throttle: skip if we checked recently.
+  local now; now=$(date +%s)
+  if (( now - _DRIFT_LAST_CHECK < _DRIFT_CHECK_INTERVAL )); then
+    return
+  fi
+  _DRIFT_LAST_CHECK=$now
 
   local now_node now_python now_go now_env now_dep now_path
   now_node="$(_drift_tool_version node 2>/dev/null || echo not-installed)"

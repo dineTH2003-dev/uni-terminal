@@ -218,11 +218,20 @@ _broadcast_serve_once() {
 }
 
 # Run a persistent HTTP server that handles one connection at a time.
+# BUG-5 FIX: nc flags vary across distros (GNU vs BSD vs ncat).
+# Try multiple invocations in order of likelihood.
 _unishell_broadcast_server() {
   local fifo="$1"
   while true; do
-    _broadcast_serve_once "$fifo" | nc -l -p "$_BROADCAST_PORT" -q 1 2>/dev/null || \
-    _broadcast_serve_once "$fifo" | nc -l    "$_BROADCAST_PORT"       2>/dev/null || break
+    if command -v ncat >/dev/null 2>&1; then
+      # ncat (from nmap) — most portable modern option.
+      _broadcast_serve_once "$fifo" | ncat -l "$_BROADCAST_PORT" --keep-open 2>/dev/null && continue
+    fi
+    # GNU netcat: nc -l -p <port> -q 1
+    _broadcast_serve_once "$fifo" | nc -l -p "$_BROADCAST_PORT" -q 1 2>/dev/null && continue
+    # BSD/macOS netcat: nc -l <port> (no -p, no -q)
+    _broadcast_serve_once "$fifo" | nc -l "$_BROADCAST_PORT" 2>/dev/null && continue
+    break  # All variants failed — exit the loop.
   done
 }
 

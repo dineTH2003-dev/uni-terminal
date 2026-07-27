@@ -104,7 +104,8 @@ unishell_session_off() {
     showme _showme_detect_terminal _showme_check_deps _showme_has \
     _showme_open_window _showme_write_engine _showme_cleanup; do
     unset -f "$fn" 2>/dev/null || true
-    unfunction "$fn" 2>/dev/null || true
+    # BUG-9 FIX: unfunction is Zsh-only; skip in Bash.
+    [ -n "${ZSH_VERSION:-}" ] && unfunction "$fn" 2>/dev/null || true
   done
 
   unset UNISHELL_HOME UNISHELL_VERSION UNISHELL_CONFIG_LOADED UNISHELL_LOADER_LOADED \

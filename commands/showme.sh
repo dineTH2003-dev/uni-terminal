@@ -23,17 +23,16 @@ _showme_check_deps() {
   local ok=1
   if ! _showme_has inotifywait; then
     warn "inotify-tools is not installed (needed for filesystem monitoring)."
-    local mgr
-    mgr=$(_unishell_package_manager 2>/dev/null || echo "")
+    local mgr="${UNISHELL_PKG_MANAGER:-}"
     if [ -n "$mgr" ]; then
       printf "%b" "  Install it now? (y/N): "
       local ans; read -r ans
       case "$ans" in
         y|Y|yes|YES)
           case "$mgr" in
-            apt)    _unishell_root_cmd apt-get install -y inotify-tools ;;
-            dnf)    _unishell_root_cmd dnf install -y inotify-tools ;;
-            pacman) _unishell_root_cmd pacman -S --needed inotify-tools ;;
+            apt)    sudo apt-get install -y inotify-tools ;;
+            dnf)    sudo dnf install -y inotify-tools ;;
+            pacman) sudo pacman -S --needed inotify-tools ;;
             *)      warn "Install manually: your-package-manager install inotify-tools" ; ok=0 ;;
           esac
           ;;

@@ -58,10 +58,8 @@ _unishell_ghost_tick() {
 _ghost_list_commits() {
   local branch="$1"
   local ref="refs/ghosts/$branch"
-  git rev-list --no-walk=unsorted "$ref" 2>/dev/null | while read -r sha; do
-    local msg; msg=$(git log -1 --format="%ar — %s" "$sha" 2>/dev/null)
-    printf "%s\t%s\n" "$sha" "$msg"
-  done | head -20
+  # Use git log to walk the full ghost ref chain (not --no-walk which only shows tip).
+  git log --format="%H%x09%ar — %s" "$ref" 2>/dev/null | head -20
 }
 
 # ── User-facing command ──────────────────────────────────────────────────────
@@ -145,7 +143,14 @@ ghostsave() {
         return 1
       fi
 
-      local target_sha="${shas[$((choice-1))]}"
+      # BUG-1 FIX: Zsh arrays are 1-indexed, Bash are 0-indexed.
+      # Use $choice directly (1-based) for Zsh, $((choice-1)) for Bash.
+      local target_sha
+      if [ -n "${ZSH_VERSION:-}" ]; then
+        target_sha="${shas[$choice]}"
+      else
+        target_sha="${shas[$((choice-1))]}"
+      fi
       warn "This will restore your working tree to ghost commit $target_sha."
       printf "Your current uncommitted changes will be stashed first. Continue? (y/N): "
       local confirm; read -r confirm

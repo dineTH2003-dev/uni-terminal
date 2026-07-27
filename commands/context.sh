@@ -36,9 +36,9 @@ _context_redact() {
 # ── Passive PROMPT_COMMAND hook (replaces no-op stub from loader) ────────────
 
 _unishell_context_hook() {
-  # Only operate inside a workspace or recognized project dir.
+  # Only operate inside recognized project directories.
   case "$PWD" in
-    "$WORKSPACE_DIR"/*|"$HOME/projects"/*|"$HOME/dev"/*) ;;
+    "$HOME/workspace"/*|"$HOME/projects"/*|"$HOME/dev"/*|"$HOME/Downloads"/*) ;;
     *) return ;;
   esac
 
