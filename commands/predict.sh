@@ -13,19 +13,30 @@ _unishell_predict_suggest() {
     buf="$READLINE_LINE"
   fi
 
-  # Only trigger if the buffer starts with git or is empty
-  if [ -n "$buf" ] && [[ "$buf" != git* ]]; then
-     return 0
-  fi
-
-  # Must be inside a git repo
-  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-     return 0
-  fi
-
   local suggestion=""
-  local git_dir
-  git_dir="$(git rev-parse --git-dir 2>/dev/null)"
+
+  # ── Dynamic User Plugins ──
+  if [ -d "$HOME/.unishell/predict.d" ]; then
+    local plugin
+    for plugin in "$HOME/.unishell/predict.d"/*.sh; do
+      [ -f "$plugin" ] || continue
+      source "$plugin" 2>/dev/null
+      if declare -f _predict_plugin_match > /dev/null 2>&1; then
+        PLUGIN_SUGGESTION=""
+        _predict_plugin_match "$buf"
+        if [ -n "$PLUGIN_SUGGESTION" ]; then
+          suggestion="$PLUGIN_SUGGESTION"
+          break
+        fi
+      fi
+    done
+  fi
+
+  # ── Git Core Logic ──
+  if [ -z "$suggestion" ] && [[ "$buf" == git* || -z "$buf" ]]; then
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      local git_dir
+      git_dir="$(git rev-parse --git-dir 2>/dev/null)"
 
   # ── State 1: Rebase / Merge in progress ──
   if [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; then
@@ -88,6 +99,8 @@ _unishell_predict_suggest() {
      suggestion="git fetch --all --prune"
   else
      suggestion="git status"
+  fi
+    fi
   fi
 
   # ── Apply the suggestion ──

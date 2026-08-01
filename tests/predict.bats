@@ -70,3 +70,24 @@ teardown() {
   "
   [[ "$output" == *"git add ."* ]]
 }
+
+@test "predict suggest: dynamic user plugin" {
+  run bash -c "
+    export UNISHELL_HOME='$REPO_ROOT'
+    mkdir -p ~/.unishell/predict.d
+    cat << 'INNER_EOF' > ~/.unishell/predict.d/docker.sh
+_predict_plugin_match() {
+  local buf=\"\$1\"
+  if [[ \"\$buf\" == \"docker p\" ]]; then
+     PLUGIN_SUGGESTION=\"docker ps -a\"
+  fi
+}
+INNER_EOF
+    source '$REPO_ROOT/commands/predict.sh'
+    READLINE_LINE='docker p'
+    _unishell_predict_suggest
+    echo \"\$READLINE_LINE\"
+    rm -f ~/.unishell/predict.d/docker.sh
+  "
+  [[ "$output" == *"docker ps -a"* ]]
+}

@@ -50,6 +50,12 @@ predict off         # Disable Ctrl+G auto-suggestions
    - Unstaged files (`git add .` or `git commit -m`)
 4. Replaces the current command line buffer with the suggested command
 
+### Custom Plugins (Docker, npm, etc.)
+
+You can easily extend the engine to auto-complete commands for other tools without modifying the Git-optimized core!
+
+Just create a `.sh` file in `~/.unishell/predict.d/` containing a `_predict_plugin_match` function. See `CONTRIBUTING.md` for a full example.
+
 ---
 
 ## `ghostsave` — Invisible Shadow Commits
