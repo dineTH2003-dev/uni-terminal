@@ -30,32 +30,25 @@ showme help         # Show usage
 
 ---
 
-## `predict` — Intelligent Error Post-Mortem
+## `predict` — Real-time Git Predictive Auto-Suggestions
 
-Intercepts failed commands and explains the error with a suggested fix.
+Analyzes your repository state in real-time and auto-completes Git commands directly into your terminal.
 
 ```bash
-predict on          # Enable error interception for this session
-predict off         # Disable error interception
-predict status      # Check if predict is active
-predict learn CMD FIX EXPLAIN  # Teach a new error pattern
+predict on          # Enable Ctrl+G auto-suggestions for this session
+predict off         # Disable Ctrl+G auto-suggestions
 ```
 
 ### How It Works
 
-1. Hooks into Bash's `ERR` / `DEBUG` traps or Zsh's `TRAPERR` / `preexec` hooks
-2. Captures stderr output to a temp file
-3. Matches exit code + stderr against `predict/patterns.tsv`
-4. Displays cause, fix command, and explanation
-5. Offers to execute the fix interactively
-
-### Custom Patterns
-
-Add your own patterns to `~/.unishell/predict/patterns.tsv`:
-
-```
-EXIT_CODE<TAB>STDERR_REGEX<TAB>FIX_COMMAND<TAB>EXPLANATION
-```
+1. Binds to `Ctrl+G` using `readline` (Bash) or `zle` (Zsh)
+2. When you press `Ctrl+G`, it analyzes the `.git` directory and remote state
+3. Checks for:
+   - Merge/rebase conflicts (`git merge --continue`)
+   - Missing upstreams (`git push --set-upstream origin ...`)
+   - Detached HEAD (`git checkout -b new-branch-name`)
+   - Unstaged files (`git add .` or `git commit -m`)
+4. Replaces the current command line buffer with the suggested command
 
 ---
 

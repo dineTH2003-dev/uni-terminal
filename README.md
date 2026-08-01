@@ -24,23 +24,17 @@ showme --inline     # Stream to the current terminal instead
 showme stop         # Stop monitoring
 ```
 
-### 🩺 `autopsy` — Intelligent Error Post-Mortem
-When a command fails, autopsy catches the error, explains **why** it happened in plain English, and offers to run the correct fix automatically.
+### 🔮 `predict` — Real-time Git Predictive Auto-Suggestions
+Forget waiting for a Git command to fail. Predict analyzes your repository state (merge conflicts, detached HEAD, missing upstreams, etc.) **in real-time** and auto-completes the perfect command directly into your terminal.
 
 ```
-$ git push
-fatal: The current branch feature-x has no upstream branch.
-
-[AUTOPSY] Cause:  Branch has no upstream tracking reference.
-[AUTOPSY] Fix:    git push --set-upstream origin feature-x
-[AUTOPSY] Why:    Git doesn't know which remote branch to push to.
-          Run fix? (y/N):
+$ git push <Press Ctrl+G>
+$ git push --set-upstream origin feature-x
 ```
 
 ```bash
-autopsy on          # Enable error interception
-autopsy off         # Disable
-autopsy learn CMD FIX EXPLAIN  # Teach a new pattern
+predict on          # Enable Ctrl+G auto-suggestions
+predict off         # Disable Ctrl+G auto-suggestions
 ```
 
 ### 👻 `ghostsave` — Invisible Shadow Commits
@@ -125,11 +119,11 @@ source ~/.bashrc
 | **Linux** | ✅ Full support |
 | **WSL2** (Windows) | ✅ Full support |
 | **macOS** | ⚠️ Near-full (needs `brew install fswatch` for showme) |
-| **Git Bash** (Windows) | ⚠️ Core features (autopsy, ghostsave, context, drift) |
+| **Git Bash** (Windows) | ⚠️ Core features (predict, ghostsave, context, drift) |
 
 ## Architecture
 
-UniShell keeps startup small with a hybrid loading model. `autopsy` is loaded at boot because failed-command interception must be active before your first command; the other command modules are registered as lightweight lazy stubs and load on first use. This means:
+UniShell keeps startup small with a hybrid loading model. `predict` is loaded at boot because real-time interception must be active before your first command; the other command modules are registered as lightweight lazy stubs and load on first use. This means:
 
 - **Low boot overhead** — UniShell keeps startup work minimal
 - **Zero daemons** — All background monitoring uses native shell hooks (`PROMPT_COMMAND` / `precmd`)

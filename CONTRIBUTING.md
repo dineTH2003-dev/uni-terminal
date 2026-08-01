@@ -12,14 +12,13 @@ uni-terminal/
 │   ├── loader.sh             Module registration and PROMPT_COMMAND hooks
 │   └── platform.sh           Cross-platform detection (linux/wsl/macos/gitbash)
 ├── commands/
-│   ├── autopsy.sh            Error post-mortem engine
+│   ├── predict.sh            Predictive Git auto-suggestion engine
 │   ├── drift.sh              Environment drift detector
 │   ├── ghostsave.sh          Shadow commit system
 │   ├── context.sh            Per-project command memory
 │   ├── broadcast.sh          LAN terminal streaming
 │   └── showme.sh             GUI transparency engine
-├── autopsy/
-│   └── patterns.tsv          Error pattern database
+
 ├── showme/translations/
 │   ├── fs.tsv                Filesystem event → command translations
 │   └── dbus.tsv              D-Bus event → command translations
@@ -31,13 +30,9 @@ uni-terminal/
 └── README.md
 ```
 
-## How to Add a New Error Pattern
+## How to Add New Predict Logic
 
-Edit `autopsy/patterns.tsv` and add a line:
-
-```
-EXIT_CODE	STDERR_REGEX	FIX_COMMAND	EXPLANATION
-```
+Edit `commands/predict.sh` and add new state checks to `_unishell_predict_suggest()`. Ensure any git commands run instantly in the background (`2>/dev/null`) to keep typing latency at zero.
 
 ## How to Add a New D-Bus Translation
 
