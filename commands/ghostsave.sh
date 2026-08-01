@@ -41,7 +41,7 @@ _unishell_ghost_tick() {
   [ -z "$tree" ] && return
 
   # Find parent: last ghost commit or HEAD.
-  local parent; parent=$(git rev-parse "$ref" 2>/dev/null || git rev-parse HEAD 2>/dev/null)
+  local parent; parent=$(git rev-parse -q --verify "$ref" || git rev-parse HEAD 2>/dev/null)
 
   # Write the ghost commit.
   local ghost
@@ -109,7 +109,7 @@ ghostsave() {
       info "Shadow commits on '$branch': $ghost_count"
       if [ "$ghost_count" -gt 0 ]; then
         info "Latest ghosts:"
-        git log --oneline --no-walk=unsorted "$ref" 2>/dev/null | head -5 | sed 's/^/  /'
+        git log --oneline -n 5 "$ref" 2>/dev/null | sed 's/^/  /'
       fi
       ;;
     restore)
