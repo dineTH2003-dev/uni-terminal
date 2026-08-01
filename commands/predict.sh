@@ -60,7 +60,17 @@ _unishell_predict_suggest() {
         suggestion="git add ."
      fi
   
-  # ── State 5: Fallbacks and Typos ──
+  # ── State 5: Smart Flag Suggestions ──
+  elif [[ "$buf" == "git push -f"* ]] || [[ "$buf" == "git push --force"* ]]; then
+     suggestion="git push --force-with-lease"
+  elif [[ "$buf" == *"commit -a"* ]]; then
+     suggestion="git commit -am \"\""
+  elif [[ "$buf" == *"commit -m"* ]]; then
+     suggestion="git commit -m \"\""
+  elif [[ "$buf" == *"log"* ]] && [[ "$buf" != *"--"* ]]; then
+     suggestion="git log --oneline --graph --decorate"
+  
+  # ── State 6: Fallbacks and Typos ──
   elif [[ "$buf" == "git p" ]]; then
      # Check if ahead or behind
      if git status --porcelain -b 2>/dev/null | grep -q '\[ahead'; then
