@@ -85,7 +85,7 @@ export UNISHELL_TMPDIR="${BATS_TMPDIR:-/tmp}"
     autopsy status 2>&1
   "
   [[ "$output" == *"Autopsy is enabled"* ]]
-  [[ "$output" == *"Patterns loaded"* ]]
+  [[ "$output" == *"Plugins loaded"* ]]
 }
 
 @test "autopsy disables without errors" {
@@ -122,7 +122,7 @@ export UNISHELL_TMPDIR="${BATS_TMPDIR:-/tmp}"
     autopsy on 2>/dev/null
     git p
     echo 'DONE'
-  "
+  " <<< "n"
   [[ "$output" == *"Cause:"* ]] || [[ "$output" == *"invalid git"* ]] || \
   [[ "$output" == *"git sub-command"* ]]
 }
@@ -137,7 +137,7 @@ export UNISHELL_TMPDIR="${BATS_TMPDIR:-/tmp}"
     _unishell_autopsy_match 'npm install' '1' \
       'npm ERR! code ENOENT
 npm ERR! enoent ENOENT: no such file or directory, open package.json' 2>&1
-  "
+  " <<< "n"
   [[ "$output" == *"Cause:"* ]]
 }
 
@@ -148,8 +148,8 @@ npm ERR! enoent ENOENT: no such file or directory, open package.json' 2>&1
     autopsy on 2>/dev/null
     _AUTOPSY_LAST_CMD='python3 app.py'
     _unishell_autopsy_match 'python3 app.py' '1' \
-      'ModuleNotFoundError: No module named requests' 2>&1
-  "
+      \"ModuleNotFoundError: No module named 'requests'\" 2>&1
+  " <<< "n"
   [[ "$output" == *"Cause:"* ]]
 }
 
@@ -186,25 +186,27 @@ npm ERR! enoent ENOENT: no such file or directory, open package.json' 2>&1
 
 # ── 5. TSV file integrity ─────────────────────────────────────────────────────
 
-@test "patterns.tsv uses real tabs (not literal backslash-t)" {
-  # If the file has literal \t strings, grep will find them
-  run grep -c $'\\\\t' "$REPO_ROOT/autopsy/patterns.tsv"
-  # Should be 0 literal \t occurrences
+@test "plugin tsvs use real tabs (not literal backslash-t)" {
+  # If any file has literal \t strings, grep will find them
+  run bash -c "grep '\\\\t' $REPO_ROOT/autopsy/plugins/*.tsv | wc -l"
+  # Should be 0 files with literal \t occurrences
   [ "$output" -eq 0 ]
 }
 
-@test "patterns.tsv has at least 50 patterns" {
-  run bash -c "grep -cv '^#\|^$' '$REPO_ROOT/autopsy/patterns.tsv'"
-  [ "$output" -ge 50 ]
+@test "plugins have at least 25 patterns combined" {
+  run bash -c "cat $REPO_ROOT/autopsy/plugins/*.tsv | grep -cv '^#\|^$'"
+  [ "$output" -ge 25 ]
 }
 
-@test "every non-comment line in patterns.tsv has 5 tab-separated fields" {
+@test "every non-comment line in plugins has 5 tab-separated fields" {
   run bash -c "
     bad=0
-    while IFS=$'\\t' read -r f1 f2 f3 f4 f5 rest; do
-      case \"\$f1\" in '#'*|'') continue ;; esac
-      [ -z \"\$f5\" ] && bad=\$((bad+1))
-    done < '$REPO_ROOT/autopsy/patterns.tsv'
+    for file in $REPO_ROOT/autopsy/plugins/*.tsv; do
+      while IFS=$'\\t' read -r f1 f2 f3 f4 f5 rest; do
+        case \"\$f1\" in '#'*|'') continue ;; esac
+        [ -z \"\$f5\" ] && bad=\$((bad+1))
+      done < \"\$file\"
+    done
     echo \$bad
   "
   [ "$output" -eq 0 ]

@@ -14,7 +14,8 @@
 #
 # Bash uses the ERR + DEBUG trap pair — still the most reliable approach there.
 
-_AUTOPSY_PATTERNS="$UNISHELL_HOME/autopsy/patterns.tsv"
+_AUTOPSY_PLUGIN_DIR="$UNISHELL_HOME/autopsy/plugins"
+_AUTOPSY_USER_DIR="$HOME/.unishell/autopsy.d"
 : "${_AUTOPSY_LAST_CMD:=}"
 : "${_AUTOPSY_LAST_EXIT:=0}"
 : "${_AUTOPSY_SAVED_EXIT:=0}"        # Written by TRAPERR; read by precmd hook.
@@ -152,24 +153,74 @@ _unishell_autopsy_match() {
   local cmd="$1" exit_code="$2" stderr="$3"
   local combined="${stderr}${cmd}"
 
-  [ -f "$_AUTOPSY_PATTERNS" ] || return
-
   local matched_cause="" matched_fix="" matched_learn=""
+  
+  # Helper to process a single TSV file
+  _process_tsv() {
+    local tsv_file="$1"
+    while IFS=$'\t' read -r pattern_exit pattern_regex cause fix learn || [ -n "$pattern_exit" ]; do
+      case "$pattern_exit" in "#"*|"") continue ;; esac
+      if [ "$pattern_exit" != "*" ] && [ "$pattern_exit" != "$exit_code" ]; then
+        continue
+      fi
+      if printf '%s\n' "$combined" | grep -aqE "$pattern_regex" 2>/dev/null; then
+        local captured
+        captured="$(printf '%s\n' "$combined" | grep -aoE "$pattern_regex" 2>/dev/null | head -1)"
+        matched_cause="$cause"
+        matched_fix="$(printf '%s' "$fix" | sed "s|\$1|$captured|g")"
+        matched_learn="$learn"
+        return 0
+      fi
+    done <"$tsv_file"
+    return 1
+  }
 
-  while IFS=$'\t' read -r pattern_exit pattern_regex cause fix learn || [ -n "$pattern_exit" ]; do
-    case "$pattern_exit" in "#"*|"") continue ;; esac
-    if [ "$pattern_exit" != "*" ] && [ "$pattern_exit" != "$exit_code" ]; then
-      continue
+  # Check user plugins first (overrides)
+  if [ -d "$_AUTOPSY_USER_DIR" ]; then
+    while IFS= read -r p; do
+      [ -n "$p" ] && [ -f "$p" ] && _process_tsv "$p" && break
+    done <<< "$(find "$_AUTOPSY_USER_DIR" -maxdepth 1 -name '*.tsv' 2>/dev/null)"
+  fi
+
+  # Check system plugins if no match yet
+  if [ -z "$matched_cause" ] && [ -d "$_AUTOPSY_PLUGIN_DIR" ]; then
+    while IFS= read -r p; do
+      [ -n "$p" ] && [ -f "$p" ] && _process_tsv "$p" && break
+    done <<< "$(find "$_AUTOPSY_PLUGIN_DIR" -maxdepth 1 -name '*.tsv' 2>/dev/null)"
+  fi
+
+  # Helper to process dynamic .sh plugins
+  _process_sh() {
+    local sh_file="$1"
+    # The script should define a function _autopsy_plugin_match
+    # that sets MATCHED_CAUSE, MATCHED_FIX, and MATCHED_LEARN
+    # It receives cmd, exit_code, stderr as arguments.
+    source "$sh_file" 2>/dev/null
+    if declare -f _autopsy_plugin_match > /dev/null; then
+      MATCHED_CAUSE="" MATCHED_FIX="" MATCHED_LEARN=""
+      _autopsy_plugin_match "$cmd" "$exit_code" "$stderr"
+      if [ -n "$MATCHED_CAUSE" ]; then
+        matched_cause="$MATCHED_CAUSE"
+        matched_fix="$MATCHED_FIX"
+        matched_learn="$MATCHED_LEARN"
+        return 0
+      fi
     fi
-    if printf '%s\n' "$combined" | grep -aqE "$pattern_regex" 2>/dev/null; then
-      local captured
-      captured="$(printf '%s\n' "$combined" | grep -aoE "$pattern_regex" 2>/dev/null | head -1)"
-      matched_cause="$cause"
-      matched_fix="$(printf '%s' "$fix" | sed "s|\$1|$captured|g")"
-      matched_learn="$learn"
-      break
-    fi
-  done <"$_AUTOPSY_PATTERNS"
+    return 1
+  }
+
+  # If no TSV matched, try dynamic script plugins
+  if [ -z "$matched_cause" ] && [ -d "$_AUTOPSY_USER_DIR" ]; then
+    while IFS= read -r p; do
+      [ -n "$p" ] && [ -f "$p" ] && _process_sh "$p" && break
+    done <<< "$(find "$_AUTOPSY_USER_DIR" -maxdepth 1 -name '*.sh' 2>/dev/null)"
+  fi
+
+  if [ -z "$matched_cause" ] && [ -d "$_AUTOPSY_PLUGIN_DIR" ]; then
+    while IFS= read -r p; do
+      [ -n "$p" ] && [ -f "$p" ] && _process_sh "$p" && break
+    done <<< "$(find "$_AUTOPSY_PLUGIN_DIR" -maxdepth 1 -name '*.sh' 2>/dev/null)"
+  fi
 
   [ -z "$matched_cause" ] && return
 
@@ -218,11 +269,26 @@ autopsy() {
       else
         warn "Autopsy is disabled. Run: autopsy on"
       fi
-      info "Pattern database: $_AUTOPSY_PATTERNS"
+      info "Plugin directories: $_AUTOPSY_PLUGIN_DIR, $_AUTOPSY_USER_DIR"
       local count=0
-      [ -f "$_AUTOPSY_PATTERNS" ] && \
-        count=$(grep -cv '^#\|^$' "$_AUTOPSY_PATTERNS" 2>/dev/null || echo 0)
-      info "Patterns loaded: $count"
+      local files=0
+      for d in "$_AUTOPSY_PLUGIN_DIR" "$_AUTOPSY_USER_DIR"; do
+        if [ -d "$d" ]; then
+          while IFS= read -r p; do
+            if [ -n "$p" ] && [ -f "$p" ]; then
+              files=$((files + 1))
+              if [[ "$p" == *.tsv ]]; then
+                local pattern_count; pattern_count=$(grep -cv '^#\|^$' "$p" 2>/dev/null || echo 0)
+                count=$((count + pattern_count))
+              else
+                # .sh plugins count as 1 dynamic pattern conceptually
+                count=$((count + 1))
+              fi
+            fi
+          done <<< "$(find "$d" -maxdepth 1 \( -name '*.tsv' -o -name '*.sh' \) 2>/dev/null)"
+        fi
+      done
+      info "Plugins loaded: $files files, $count patterns/scripts"
       ;;
     learn)
       local learn_cmd="${1:-}" learn_fix="${2:-}" learn_why="${3:-}"
@@ -230,8 +296,8 @@ autopsy() {
         err "Usage: autopsy learn \"failed-command\" \"fix-command\" [\"explanation\"]"
         return 1
       fi
-      local user_patterns="$UNISHELL_HOME/autopsy/user-patterns.tsv"
-      mkdir -p "$(dirname "$user_patterns")"
+      local user_patterns="$_AUTOPSY_USER_DIR/user-patterns.tsv"
+      mkdir -p "$_AUTOPSY_USER_DIR"
       local escaped
       escaped="$(printf '%s' "$learn_cmd" | sed 's/[.*+?^${}()|[\\]\\]/\\&/g')"
       printf "%s\t%s\t%s\t%s\t%s\n" \
