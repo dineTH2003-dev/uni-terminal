@@ -16,3 +16,7 @@
 128	fatal: remote origin already exists.	You tried to add a remote named 'origin', but it already exists.	git remote set-url origin <new-url>	Update the existing remote URL instead of adding a new one.
 128	fatal: branch '(.+)' does not exist	You tried to delete or operate on a branch that does not exist locally.	git fetch --all	Fetch all branches from the remote to make sure you have the latest info.
 1	error: Your local changes to the following files would be overwritten by checkout:	Uncommitted changes conflict with the branch you're trying to checkout.	git stash	Stash your changes, switch branch, and optionally git stash pop.
+128	fatal: Unable to create '.+index.lock': File exists.	Another git process is running or crashed.	rm -f .git/index.lock	Delete the lockfile manually if no other git process is running.
+128	fatal: Not possible to fast-forward, aborting.	You have divergent branches and fast-forward is not possible.	git pull --rebase	Use rebase to put your commits on top of the remote commits.
+128	error: pathspec '(.+)' did not match any file\(s\) known to git	You tried to add, commit, or checkout a file that doesn't exist or isn't tracked.	git status	Check the correct filename or see if it's ignored.
+128	fatal: could not read Username for 'https://github.com': No such device or address	Authentication prompt failed because you are running in a non-interactive shell or credential helper is broken.	-	Run the command interactively or configure SSH instead of HTTPS.

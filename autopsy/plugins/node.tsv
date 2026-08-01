@@ -1,7 +1,0 @@
-1	EADDRINUSE.*:([0-9]+)	Port $1 is already in use by another process	killport $1	Another process grabbed this port first. killport finds and kills it safely.
-1	Cannot find module	Missing Node.js dependency — node_modules is incomplete or corrupt	npm install	package.json lists a dependency that isn't in node_modules. Re-install to fix.
-127	npm: command not found	Node.js / npm is not installed	-	Install Node.js from https://nodejs.org or with: nvm install --lts
-1	ENOENT.*package\.json	No package.json in current directory — wrong folder	cd $(find . -name package.json -maxdepth 3 | head -1 | xargs dirname)	You need to run npm commands from the project root where package.json lives.
-1	ERR_OSSL_EVP	OpenSSL version incompatibility with your Node.js version	export NODE_OPTIONS=--openssl-legacy-provider	Node 17+ changed OpenSSL defaults. This env var restores compatibility.
-1	npm ERR! missing script: (.+)	Package.json does not define the npm script "$1".	-	Add the script to the "scripts" section of package.json.
-1	Unexpected token.*in JSON at position	Malformed JSON file (likely package.json).	-	Fix the syntax error in the JSON file.

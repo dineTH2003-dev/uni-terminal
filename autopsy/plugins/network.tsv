@@ -1,8 +1,0 @@
-*	Could not resolve host	DNS lookup failed — hostname not found.	-	Check the hostname spelling or your DNS/network settings.
-*	Connection refused	Service is not running or wrong port/host	-	Check if the target service is running and on the correct port.
-*	ERROR 404: Not Found	Requested URL returned 404.	-	Verify the download link or URL is correct.
-127	([a-zA-Z0-9_.-]+): command not found	'$1' is not installed or not on PATH	which $1	The shell can't find '$1'. Check if it's installed and on your PATH.
-*	No space left on device	Disk is full — no free space	df -h	Your disk has no space left. Use df -h to see which mounts are full.
-*	Killed.*out of memory	Process was killed due to insufficient memory.	free -h	Check available memory. Close other applications or increase swap.
-*	Segmentation fault	Program crashed with a memory access violation.	-	Debug with gdb or valgrind. This is usually a bug in the code.
-*	core dumped	Program crashed and created a core dump.	-	Use gdb to analyze the core dump and find the crash location.

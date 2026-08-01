@@ -238,8 +238,8 @@ _unishell_autopsy_match() {
     case "$confirm" in
       y|Y|yes|YES)
         printf "%b\n" "  ${GREEN}→${NC} ${matched_fix}"
-        # SEC-1: run fix in a subshell, not via eval, to prevent injection.
-        ( $matched_fix )
+        # SEC-1: run fix in a subshell. Use eval to ensure word-splitting works in Zsh.
+        ( eval "$matched_fix" )
         ;;
     esac
   else

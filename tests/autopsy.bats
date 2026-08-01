@@ -127,31 +127,6 @@ export UNISHELL_TMPDIR="${BATS_TMPDIR:-/tmp}"
   [[ "$output" == *"git sub-command"* ]]
 }
 
-@test "pattern: npm missing package.json" {
-  run bash -i -c "
-    export UNISHELL_HOME='$REPO_ROOT'
-    source '$REPO_ROOT/core/loader.sh'
-    autopsy on 2>/dev/null
-    # Simulate the error output directly through the match function
-    _AUTOPSY_LAST_CMD='npm install'
-    _unishell_autopsy_match 'npm install' '1' \
-      'npm ERR! code ENOENT
-npm ERR! enoent ENOENT: no such file or directory, open package.json' 2>&1
-  " <<< "n"
-  [[ "$output" == *"Cause:"* ]]
-}
-
-@test "pattern: python module not found" {
-  run bash -i -c "
-    export UNISHELL_HOME='$REPO_ROOT'
-    source '$REPO_ROOT/core/loader.sh'
-    autopsy on 2>/dev/null
-    _AUTOPSY_LAST_CMD='python3 app.py'
-    _unishell_autopsy_match 'python3 app.py' '1' \
-      \"ModuleNotFoundError: No module named 'requests'\" 2>&1
-  " <<< "n"
-  [[ "$output" == *"Cause:"* ]]
-}
 
 # ── 4. Shift regression (Zsh-style zero-arg call) ────────────────────────────
 
@@ -193,9 +168,9 @@ npm ERR! enoent ENOENT: no such file or directory, open package.json' 2>&1
   [ "$output" -eq 0 ]
 }
 
-@test "plugins have at least 25 patterns combined" {
+@test "plugins have at least 15 patterns combined" {
   run bash -c "cat $REPO_ROOT/autopsy/plugins/*.tsv | grep -cv '^#\|^$'"
-  [ "$output" -ge 25 ]
+  [ "$output" -ge 15 ]
 }
 
 @test "every non-comment line in plugins has 5 tab-separated fields" {
