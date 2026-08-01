@@ -272,13 +272,14 @@ autopsy() {
       info "Plugin directories: $_AUTOPSY_PLUGIN_DIR, $_AUTOPSY_USER_DIR"
       local count=0
       local files=0
+      local pattern_count=0
       for d in "$_AUTOPSY_PLUGIN_DIR" "$_AUTOPSY_USER_DIR"; do
         if [ -d "$d" ]; then
           while IFS= read -r p; do
             if [ -n "$p" ] && [ -f "$p" ]; then
               files=$((files + 1))
               if [[ "$p" == *.tsv ]]; then
-                local pattern_count; pattern_count=$(grep -cv '^#\|^$' "$p" 2>/dev/null || echo 0)
+                pattern_count=$(grep -cv '^#\|^$' "$p" 2>/dev/null || echo 0)
                 count=$((count + pattern_count))
               else
                 # .sh plugins count as 1 dynamic pattern conceptually
