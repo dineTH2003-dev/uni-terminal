@@ -83,7 +83,7 @@ copy_installation() {
   mkdir -p "$TARGET_DIR"
 
   local item
-  for item in bin core commands autopsy showme README.md LICENSE install.sh uninstall.sh; do
+  for item in bin core commands showme README.md LICENSE install.sh uninstall.sh; do
     if [ -e "$REPO_ROOT/$item" ]; then
       cp -R "$REPO_ROOT/$item" "$TARGET_DIR/"
     fi

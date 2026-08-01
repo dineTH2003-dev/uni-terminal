@@ -1,6 +1,6 @@
 # Commands
 
-UniShell provides 6 developer intelligence commands. `autopsy` loads at shell startup so failed-command interception is active immediately; the other commands are lazy-loaded on first use.
+UniShell provides 6 developer intelligence commands. `predict` loads at shell startup so failed-command interception is active immediately; the other commands are lazy-loaded on first use.
 
 ## `showme` — GUI Transparency Engine
 
@@ -30,28 +30,28 @@ showme help         # Show usage
 
 ---
 
-## `autopsy` — Intelligent Error Post-Mortem
+## `predict` — Intelligent Error Post-Mortem
 
 Intercepts failed commands and explains the error with a suggested fix.
 
 ```bash
-autopsy on          # Enable error interception for this session
-autopsy off         # Disable error interception
-autopsy status      # Check if autopsy is active
-autopsy learn CMD FIX EXPLAIN  # Teach a new error pattern
+predict on          # Enable error interception for this session
+predict off         # Disable error interception
+predict status      # Check if predict is active
+predict learn CMD FIX EXPLAIN  # Teach a new error pattern
 ```
 
 ### How It Works
 
 1. Hooks into Bash's `ERR` / `DEBUG` traps or Zsh's `TRAPERR` / `preexec` hooks
 2. Captures stderr output to a temp file
-3. Matches exit code + stderr against `autopsy/patterns.tsv`
+3. Matches exit code + stderr against `predict/patterns.tsv`
 4. Displays cause, fix command, and explanation
 5. Offers to execute the fix interactively
 
 ### Custom Patterns
 
-Add your own patterns to `~/.unishell/autopsy/patterns.tsv`:
+Add your own patterns to `~/.unishell/predict/patterns.tsv`:
 
 ```
 EXIT_CODE<TAB>STDERR_REGEX<TAB>FIX_COMMAND<TAB>EXPLANATION

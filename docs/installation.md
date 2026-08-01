@@ -75,7 +75,7 @@ brew install fswatch
 
 ### Git Bash (Windows)
 
-Core features work: `autopsy`, `ghostsave`, `context`, `drift`.
+Core features work: `predict`, `ghostsave`, `context`, `drift`.
 
 Limited: `showme` and `broadcast` require Linux-specific tools.
 

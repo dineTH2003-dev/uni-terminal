@@ -84,8 +84,8 @@ unishell_session_off() {
 
   unalias uniexit 2>/dev/null || true
 
-  if command -v _unishell_autopsy_disable_hooks >/dev/null 2>&1; then
-    _unishell_autopsy_disable_hooks 2>/dev/null || true
+  if command -v _unishell_predict_disable_hooks >/dev/null 2>&1; then
+    _unishell_predict_disable_hooks 2>/dev/null || true
   fi
 
   local fn
@@ -94,9 +94,9 @@ unishell_session_off() {
     unishell_shell_config _unishell_lazy \
     ok warn info err unishell_ask \
     unishell_confirm unishell_session_off unishell uniexit \
-    autopsy TRAPERR _unishell_autopsy_debug _unishell_autopsy_hook \
-    _unishell_autopsy_enable_hooks _unishell_autopsy_disable_hooks \
-    _unishell_autopsy_match \
+    predict TRAPERR _unishell_predict_debug _unishell_predict_hook \
+    _unishell_predict_enable_hooks _unishell_predict_disable_hooks \
+    _unishell_predict_match \
     drift _unishell_drift_hook \
     ghostsave _unishell_ghost_tick \
     context _unishell_context_hook \
@@ -109,7 +109,7 @@ unishell_session_off() {
   done
 
   unset UNISHELL_HOME UNISHELL_VERSION UNISHELL_CONFIG_LOADED UNISHELL_LOADER_LOADED \
-    UNISHELL_LAST_DIR UNISHELL_CONTEXT_DIR UNISHELL_GHOST_LAST UNISHELL_AUTOPSY_ENABLED \
+    UNISHELL_LAST_DIR UNISHELL_CONTEXT_DIR UNISHELL_GHOST_LAST UNISHELL_PREDICT_ENABLED \
     UNISHELL_PLATFORM UNISHELL_OS_FAMILY UNISHELL_HAS_GUI UNISHELL_TMPDIR \
     UNISHELL_PKG_MANAGER UNISHELL_PLATFORM_DETECTED
   printf "UniShell disabled for this shell session. Run 'source %s' to load it again.\n" "$shell_config"
@@ -143,7 +143,7 @@ Usage:
   unishell off              Disable UniShell in this shell session
 
 Commands:
-  autopsy [on|off|learn]    Diagnose and fix failed commands automatically
+  predict [on|off|learn]    Diagnose and fix failed commands automatically
   drift [snapshot|diff|reset|list]  Detect environment drift that breaks projects
   ghostsave [enable|disable|restore|squash|status]  Invisible auto-save shadow commits
   context [replay|mark-setup|search|projects]  Per-project command memory
