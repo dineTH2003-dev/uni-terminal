@@ -87,6 +87,23 @@ ghostsave() {
       UNISHELL_GHOST_ENABLED=0
       ok "Ghostsave disabled for this session."
       ;;
+    interval)
+      local secs="${1:-}"
+      if [ -z "$secs" ]; then
+        info "Current snapshot interval: ${_GHOST_INTERVAL}s ($(( _GHOST_INTERVAL / 60 ))m)"
+        info "Usage: ghostsave interval <seconds>   e.g. ghostsave interval 300 (5 min)"
+        return 0
+      fi
+      if ! [[ "$secs" =~ ^[0-9]+$ ]] || [ "$secs" -lt 30 ]; then
+        err "Interval must be a number >= 30 seconds."
+        return 1
+      fi
+      _GHOST_INTERVAL="$secs"
+      export UNISHELL_GHOST_INTERVAL="$secs"
+      ok "Snapshot interval set to ${secs}s ($(( secs / 60 ))m $(( secs % 60 ))s)."
+      info "This applies to the current session only. To make it permanent, add:"
+      info "  export UNISHELL_GHOST_INTERVAL=$secs   to your ~/.zshrc or ~/.bashrc"
+      ;;
     tick|now)
       # Force an immediate ghost commit regardless of interval.
       local saved_tick=$_GHOST_LAST_TICK
@@ -214,14 +231,20 @@ ghostsave() {
       cat <<'EOF'
 ghostsave — invisible auto-save shadow commit system
 
-  ghostsave enable         Start auto-snapshotting every 15 minutes
-  ghostsave disable        Stop auto-snapshotting this session
-  ghostsave tick           Force an immediate ghost snapshot now
-  ghostsave status         Show ghost count and recent ghost commits
-  ghostsave restore        Interactively restore from a past ghost snapshot
-  ghostsave squash "msg"   Collapse all ghosts into one clean real commit
-  ghostsave purge          Delete all ghost history for current branch
+  ghostsave enable             Start auto-snapshotting (default: every 15 min)
+  ghostsave disable            Stop auto-snapshotting this session
+  ghostsave interval <secs>    Change snapshot interval (e.g. 300 = 5 min)
+  ghostsave tick               Force an immediate ghost snapshot now
+  ghostsave status             Show ghost count and recent ghost commits
+  ghostsave restore            Interactively restore from a past ghost snapshot
+  ghostsave squash "msg"       Collapse all ghosts into one clean real commit
+  ghostsave purge              Delete all ghost history for current branch
 
+Interval tips:
+  ghostsave interval 300       Snapshot every 5 minutes
+  ghostsave interval 900       Snapshot every 15 minutes (default)
+  ghostsave interval 1800      Snapshot every 30 minutes
+  To make permanent: add 'export UNISHELL_GHOST_INTERVAL=300' to ~/.zshrc
 Ghost commits live in refs/ghosts/<branch> — invisible to 'git log',
 'git push', and all remote operations. They are purely local safety nets.
 EOF

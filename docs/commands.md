@@ -63,12 +63,31 @@ Just create a `.sh` file in `~/.unishell/predict.d/` containing a `_predict_plug
 Creates hidden Git snapshots automatically, outside of your normal git history.
 
 ```bash
-ghostsave enable    # Start auto-saving (15-minute intervals)
+ghostsave enable    # Start auto-saving (default: every 15 minutes)
 ghostsave disable   # Stop auto-saving
+ghostsave interval 300   # Change to every 5 minutes
+ghostsave interval 1800  # Change to every 30 minutes
 ghostsave status    # Check if enabled and last save time
 ghostsave restore   # Browse and restore a hidden snapshot
 ghostsave squash "message"  # Collapse all ghosts into one real commit
 ghostsave purge     # Delete all ghost history for current branch
+```
+
+### Adjusting the Snapshot Interval
+
+By default ghostsave saves every **15 minutes (900 seconds)**. You can change this at any time:
+
+```bash
+ghostsave interval            # Show current interval
+ghostsave interval 300        # Save every 5 minutes
+ghostsave interval 900        # Save every 15 minutes (default)
+ghostsave interval 1800       # Save every 30 minutes
+```
+
+To make the interval **permanent** across all terminal sessions, add this to your `~/.zshrc` or `~/.bashrc`:
+
+```bash
+export UNISHELL_GHOST_INTERVAL=300   # 5 minutes
 ```
 
 ### How It Works

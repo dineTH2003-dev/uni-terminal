@@ -42,6 +42,7 @@ Automatically creates hidden Git snapshots every 15 minutes — outside of your 
 
 ```bash
 ghostsave enable    # Start auto-saving
+ghostsave interval 300  # Change interval to 5 min (default: 15 min)
 ghostsave restore   # Browse and restore a hidden snapshot
 ghostsave squash "message"  # Collapse all ghosts into one clean commit
 ghostsave status    # Check if enabled
