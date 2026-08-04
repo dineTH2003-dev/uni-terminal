@@ -30,7 +30,15 @@ _context_setup_path() {
 
 # Redact sensitive patterns before writing to log.
 _context_redact() {
-  sed -E "s|${_CONTEXT_REDACT_PATTERNS}|\\1=***REDACTED***|gI" 2>/dev/null || cat
+  sed \
+    -e 's/password=[^ ]*/password=***REDACTED***/gI' \
+    -e 's/passwd=[^ ]*/passwd=***REDACTED***/gI' \
+    -e 's/secret=[^ ]*/secret=***REDACTED***/gI' \
+    -e 's/token=[^ ]*/token=***REDACTED***/gI' \
+    -e 's/auth=[^ ]*/auth=***REDACTED***/gI' \
+    -e 's/credential=[^ ]*/credential=***REDACTED***/gI' \
+    -e 's/key=[^ ]*/key=***REDACTED***/gI' \
+    2>/dev/null || cat
 }
 
 # ── Passive PROMPT_COMMAND hook (replaces no-op stub from loader) ────────────
